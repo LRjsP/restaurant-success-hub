@@ -1,7 +1,12 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, getRouteApi } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { KpiTile, Panel } from "@/components/dashboard/KpiTile";
-import { generateDemoDays, computeFloorKpis, demoAlerts } from "@/lib/demo-data";
+import {
+  generateDemoDays,
+  computeFloorKpis,
+  demoAlerts,
+  daysForPreset,
+} from "@/lib/demo-data";
 import {
   AreaChart,
   Area,
@@ -16,12 +21,14 @@ import { cn } from "@/lib/utils";
 import { fmtCurrency, fmtNumber } from "@/lib/format";
 
 const HINT_KEY = "mise_floor_hint_dismissed";
+const layoutApi = getRouteApi("/_authenticated");
 
 export const Route = createFileRoute("/_authenticated/floor")({
   component: FloorPage,
 });
 
 function FloorPage() {
+  const search = layoutApi.useSearch();
   const [hintVisible, setHintVisible] = useState(false);
 
   useEffect(() => {
@@ -34,8 +41,9 @@ function FloorPage() {
     localStorage.setItem(HINT_KEY, "1");
   };
 
-  const days = generateDemoDays(7);
-  const kpis = computeFloorKpis(days);
+  const days = generateDemoDays(daysForPreset(search.range), search.center);
+  const prev = generateDemoDays(daysForPreset(search.range), search.center, daysForPreset(search.range));
+  const kpis = computeFloorKpis(days, prev);
 
   return (
     <div className="space-y-6">
