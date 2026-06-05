@@ -13,6 +13,10 @@ import {
 import { LogOut } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import bgFloor from "@/assets/bg-floor.jpg";
+import bgOffice from "@/assets/bg-office.jpg";
+import bgArchitect from "@/assets/bg-architect.jpg";
+import bgPipeline from "@/assets/bg-pipeline.jpg";
 
 const TABS = [
   {
@@ -20,24 +24,28 @@ const TABS = [
     label: "The Floor",
     hint: "Daily Pulse",
     description: "Real-time service performance — covers, net sales, PPA, and day×time demand patterns.",
+    bg: bgFloor,
   },
   {
     to: "/office",
     label: "The Office",
     hint: "Weekly P&L",
     description: "Financial health — labor %, COGS %, prime cost, and weekly P&L summary.",
+    bg: bgOffice,
   },
   {
     to: "/architect",
     label: "The Architect",
     hint: "Yield & Menu",
     description: "Menu engineering — item-level margin, mix, and yield optimization.",
+    bg: bgArchitect,
   },
   {
     to: "/pipeline",
     label: "The Pipeline",
     hint: "CRM & Events",
     description: "Events & catering CRM — leads, win rate, booked revenue, and pipeline value.",
+    bg: bgPipeline,
   },
 ] as const;
 
@@ -60,8 +68,24 @@ export function DashboardShell({
     navigate({ to: "/auth" });
   };
 
+  const activeTab = TABS.find((t) => t.to === pathname);
+
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="relative min-h-screen bg-background text-foreground">
+      {/* Per-tab atmospheric background */}
+      {activeTab && (
+        <div
+          aria-hidden
+          className="pointer-events-none fixed inset-0 z-0 bg-cover bg-center bg-no-repeat opacity-[0.08] dark:opacity-[0.18] transition-[background-image] duration-700"
+          style={{ backgroundImage: `url(${activeTab.bg})` }}
+        />
+      )}
+      <div
+        aria-hidden
+        className="pointer-events-none fixed inset-0 z-0 bg-gradient-to-b from-background/60 via-background/75 to-background"
+      />
+      <div className="relative z-10">
+
       {/* Top bar */}
       <header className="sticky top-0 z-30 border-b border-border bg-background/95 backdrop-blur">
         <div className="flex h-14 items-center justify-between px-6">
@@ -175,6 +199,7 @@ export function DashboardShell({
       </header>
 
       <main className="p-6">{children}</main>
+      </div>
     </div>
   );
 }
