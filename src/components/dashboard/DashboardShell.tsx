@@ -78,19 +78,28 @@ export function DashboardShell({
               {TABS.map((t) => {
                 const active = pathname === t.to;
                 return (
-                  <Link
-                    key={t.to}
-                    to={t.to}
-                    search={(prev: any) => prev}
-                    className={`group relative flex h-full items-center px-3 text-sm font-medium transition-colors ${
-                      active ? "text-foreground" : "text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    <span>{t.label}</span>
-                    {active && (
-                      <span className="absolute bottom-0 left-2 right-2 h-[2px] bg-accent" />
-                    )}
-                  </Link>
+                  <Tooltip key={t.to}>
+                    <TooltipTrigger asChild>
+                      <Link
+                        to={t.to}
+                        search={(prev: any) => prev}
+                        className={`group relative flex h-full items-center px-3 text-sm font-medium transition-colors ${
+                          active ? "text-foreground" : "text-muted-foreground hover:text-foreground"
+                        }`}
+                      >
+                        <span>{t.label}</span>
+                        {active && (
+                          <span className="absolute bottom-0 left-2 right-2 h-[2px] bg-accent" />
+                        )}
+                      </Link>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" align="start" className="max-w-[260px]">
+                      <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-1">
+                        {t.hint}
+                      </div>
+                      <p className="text-xs leading-snug">{t.description}</p>
+                    </TooltipContent>
+                  </Tooltip>
                 );
               })}
             </nav>
