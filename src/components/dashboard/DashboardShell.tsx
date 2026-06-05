@@ -68,8 +68,24 @@ export function DashboardShell({
     navigate({ to: "/auth" });
   };
 
+  const activeTab = TABS.find((t) => t.to === pathname);
+
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="relative min-h-screen bg-background text-foreground">
+      {/* Per-tab atmospheric background */}
+      {activeTab && (
+        <div
+          aria-hidden
+          className="pointer-events-none fixed inset-0 z-0 bg-cover bg-center bg-no-repeat opacity-[0.08] dark:opacity-[0.18] transition-[background-image] duration-700"
+          style={{ backgroundImage: `url(${activeTab.bg})` }}
+        />
+      )}
+      <div
+        aria-hidden
+        className="pointer-events-none fixed inset-0 z-0 bg-gradient-to-b from-background/60 via-background/75 to-background"
+      />
+      <div className="relative z-10">
+
       {/* Top bar */}
       <header className="sticky top-0 z-30 border-b border-border bg-background/95 backdrop-blur">
         <div className="flex h-14 items-center justify-between px-6">
