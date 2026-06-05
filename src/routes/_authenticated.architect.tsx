@@ -1,9 +1,137 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, getRouteApi } from "@tanstack/react-router";
+import { KpiTile, Panel } from "@/components/dashboard/KpiTile";
+import {
+  generateDemoDays,
+  computeMenuMatrix,
+  daysForPreset,
+  type MenuItem,
+} from "@/lib/demo-data";
+import { fmtCurrency, fmtNumber } from "@/lib/format";
+import {
+  ScatterChart,
+  Scatter,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  ZAxis,
+  Cell,
+} from "recharts";
+import { cn } from "@/lib/utils";
+
+const layoutApi = getRouteApi("/_authenticated");
+
+const CLASS_COLOR: Record<MenuItem["classification"], string> = {
+  Star: "var(--color-success)",
+  Plowhorse: "var(--color-chart-3)",
+  Puzzle: "var(--color-warning)",
+  Dog: "var(--color-destructive)",
+};
 
 export const Route = createFileRoute("/_authenticated/architect")({
-  component: () => (
-    <div className="font-mono text-sm text-muted-foreground">
-      The Architect — Yield &amp; Menu. Coming next.
-    </div>
-  ),
+  component: ArchitectPage,
 });
+
+function ArchitectPage() {
+  const search = layoutApi.useSearch();
+  const span = daysForPreset(search.range);
+  const days = generateDemoDays(span, search.center);
+  const totalCovers = days.reduce((a, d) => a + d.covers, 0);
+  const items = computeMenuMatrix(totalCovers).sort((a, b) => b.margin - a.margin);
+
+  const totalRevenue = items.reduce((a, i) => a + i.revenue, 0);
+  const totalMargin = items.reduce((a, i) => a + i.margin, 0);
+  const blendedPct = totalRevenue ? (totalMargin / totalRevenue) * 100 : 0;
+  const stars = items.filter((i) => i.classification === "Star").length;
+  const dogs = items.filter((i) => i.classification === "Dog").length;
+
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <KpiTile label="Menu Revenue" value={fmtCurrency(totalRevenue)} hint={`${items.length} items`} />
+        <KpiTile label="Total Margin" value={fmtCurrency(totalMargin)} hint={`${blendedPct.toFixed(1)}% blended`} variant="success" />
+        <KpiTile label="Stars" value={String(stars)} hint="High pop · high margin" variant="success" />
+        <KpiTile label="Dogs" value={String(dogs)} hint="Consider removing" variant={dogs > 2 ? "warning" : "default"} />
+      </div>
+
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
+        <Panel title="Menu Engineering Matrix" subtitle="Popularity vs Margin %" className="lg:col-span-3">
+          <div className="h-80 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <ScatterChart margin={{ top: 16, right: 16, bottom: 16, left: 8 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
+                <XAxis
+                  type="number"
+                  dataKey="sold"
+                  name="Units sold"
+                  tick={{ fill: "var(--color-muted-foreground)", fontSize: 10, fontFamily: "JetBrains Mono, monospace" }}
+                  axisLine={false}
+                  tickLine={false}
+                  label={{ value: "Popularity (units)", position: "insideBottom", offset: -8, fontSize: 10, fill: "var(--color-muted-foreground)" }}
+                />
+                <YAxis
+                  type="number"
+                  dataKey="marginPct"
+                  name="Margin %"
+                  tick={{ fill: "var(--color-muted-foreground)", fontSize: 10, fontFamily: "JetBrains Mono, monospace" }}
+                  axisLine={false}
+                  tickLine={false}
+                  tickFormatter={(v: number) => `${v.toFixed(0)}%`}
+                />
+                <ZAxis type="number" dataKey="revenue" range={[60, 400]} />
+                <Tooltip
+                  cursor={{ strokeDasharray: "3 3" }}
+                  contentStyle={{ backgroundColor: "var(--color-card)", border: "1px solid var(--color-border)", borderRadius: "6px", fontSize: "11px", fontFamily: "JetBrains Mono, monospace", color: "var(--color-foreground)" }}
+                  formatter={(value: any, name: string) => {
+                    if (name === "Margin %") return [`${Number(value).toFixed(1)}%`, name];
+                    if (name === "Units sold") return [fmtNumber(value), name];
+                    return [fmtCurrency(value), name];
+                  }}
+                  labelFormatter={(_, payload: any) => payload?.[0]?.payload?.name ?? ""}
+                />
+                <Scatter data={items}>
+                  {items.map((i, idx) => (
+                    <Cell key={idx} fill={CLASS_COLOR[i.classification]} />
+                  ))}
+                </Scatter>
+              </ScatterChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="mt-3 flex flex-wrap gap-3 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+            {(["Star", "Plowhorse", "Puzzle", "Dog"] as const).map((c) => (
+              <span key={c} className="flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-full" style={{ backgroundColor: CLASS_COLOR[c] }} />
+                {c}
+              </span>
+            ))}
+          </div>
+        </Panel>
+
+        <Panel title="Top Performers" subtitle="By contribution margin" className="lg:col-span-2">
+          <div className="divide-y divide-border">
+            {items.slice(0, 8).map((i) => (
+              <div key={i.name} className="flex items-center justify-between py-2.5">
+                <div className="min-w-0">
+                  <p className="truncate text-sm text-foreground">{i.name}</p>
+                  <p className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+                    {i.category} · {i.sold} sold
+                  </p>
+                </div>
+                <div className="text-right font-mono tabular-nums">
+                  <p className="text-sm text-foreground">{fmtCurrency(i.margin)}</p>
+                  <span
+                    className={cn("inline-block rounded-sm px-1.5 py-0.5 text-[9px] uppercase tracking-wider")}
+                    style={{ backgroundColor: `color-mix(in oklab, ${CLASS_COLOR[i.classification]} 18%, transparent)`, color: CLASS_COLOR[i.classification] }}
+                  >
+                    {i.classification}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Panel>
+      </div>
+    </div>
+  );
+}
