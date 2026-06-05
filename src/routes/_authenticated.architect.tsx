@@ -49,10 +49,34 @@ function ArchitectPage() {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <KpiTile label="Menu Revenue" value={fmtCurrency(totalRevenue)} hint={`${items.length} items`} />
-        <KpiTile label="Total Margin" value={fmtCurrency(totalMargin)} hint={`${blendedPct.toFixed(1)}% blended`} variant="success" />
-        <KpiTile label="Stars" value={String(stars)} hint="High pop · high margin" variant="success" />
-        <KpiTile label="Dogs" value={String(dogs)} hint="Consider removing" variant={dogs > 2 ? "warning" : "default"} />
+        <KpiTile
+          label="Menu Revenue"
+          value={fmtCurrency(totalRevenue)}
+          hint={`${items.length} items`}
+          tooltip="Total revenue attributed to menu items in this period. Driven by menu mix, pricing, and traffic."
+        />
+        <KpiTile
+          label="Total Margin"
+          value={fmtCurrency(totalMargin)}
+          hint={`${blendedPct.toFixed(1)}% blended`}
+          variant="success"
+          tooltip="Contribution margin: revenue minus food cost across all menu items. Blended % is the weighted average margin — the higher, the more each dollar of sales drops to the bottom line."
+        />
+        <KpiTile
+          label="Stars"
+          value={String(stars)}
+          hint="High pop · high margin"
+          variant="success"
+          tooltip="High-popularity, high-margin items. Your champions — protect their quality, feature them prominently, and never discount them."
+        />
+        <KpiTile
+          label="Dogs"
+          value={String(dogs)}
+          hint="Consider removing"
+          variant={dogs > 2 ? "warning" : "default"}
+          tooltip="Low-popularity, low-margin items. Candidates for removal — they take up menu real estate and prep capacity without earning their keep."
+        />
+      </div>
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
