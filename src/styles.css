@@ -50,7 +50,40 @@
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
 }
 
+/* Light mode (default) — warm paper complementary to the dark charcoal+ember palette */
 :root {
+  --background: hsl(40 30% 97%);
+  --foreground: hsl(220 20% 12%);
+  --card: hsl(0 0% 100%);
+  --card-foreground: hsl(220 20% 12%);
+  --popover: hsl(0 0% 100%);
+  --popover-foreground: hsl(220 20% 12%);
+  --primary: hsl(24 90% 48%);
+  --primary-foreground: hsl(40 30% 98%);
+  --secondary: hsl(40 20% 92%);
+  --secondary-foreground: hsl(220 20% 12%);
+  --muted: hsl(40 20% 94%);
+  --muted-foreground: hsl(220 10% 40%);
+  --accent: hsl(24 90% 48%);
+  --accent-foreground: hsl(40 30% 98%);
+  --destructive: hsl(0 70% 48%);
+  --destructive-foreground: hsl(0 0% 100%);
+  --success: hsl(142 60% 38%);
+  --warning: hsl(38 92% 45%);
+  --border: hsl(40 15% 86%);
+  --input: hsl(40 15% 88%);
+  --ring: hsl(24 90% 48%);
+  --radius: 0.5rem;
+
+  --chart-1: hsl(24 90% 48%);
+  --chart-2: hsl(142 60% 38%);
+  --chart-3: hsl(199 85% 45%);
+  --chart-4: hsl(280 60% 50%);
+  --chart-5: hsl(38 92% 45%);
+}
+
+.dark {
+  color-scheme: dark;
   --background: hsl(220 15% 5%);
   --foreground: hsl(210 10% 92%);
   --card: hsl(220 15% 8%);
@@ -72,7 +105,6 @@
   --border: hsl(220 15% 15%);
   --input: hsl(220 15% 12%);
   --ring: hsl(24 95% 55%);
-  --radius: 0.5rem;
 
   --chart-1: hsl(24 95% 55%);
   --chart-2: hsl(142 70% 45%);
@@ -81,11 +113,9 @@
   --chart-5: hsl(38 92% 55%);
 }
 
-.dark { color-scheme: dark; }
-
 @layer base {
   * { border-color: var(--color-border); }
-  html { color-scheme: dark; background: var(--color-background); }
+  html { background: var(--color-background); }
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
