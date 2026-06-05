@@ -13,6 +13,10 @@ import {
 import { LogOut } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import bgFloor from "@/assets/bg-floor.jpg";
+import bgOffice from "@/assets/bg-office.jpg";
+import bgArchitect from "@/assets/bg-architect.jpg";
+import bgPipeline from "@/assets/bg-pipeline.jpg";
 
 const TABS = [
   {
@@ -20,24 +24,28 @@ const TABS = [
     label: "The Floor",
     hint: "Daily Pulse",
     description: "Real-time service performance — covers, net sales, PPA, and day×time demand patterns.",
+    bg: bgFloor,
   },
   {
     to: "/office",
     label: "The Office",
     hint: "Weekly P&L",
     description: "Financial health — labor %, COGS %, prime cost, and weekly P&L summary.",
+    bg: bgOffice,
   },
   {
     to: "/architect",
     label: "The Architect",
     hint: "Yield & Menu",
     description: "Menu engineering — item-level margin, mix, and yield optimization.",
+    bg: bgArchitect,
   },
   {
     to: "/pipeline",
     label: "The Pipeline",
     hint: "CRM & Events",
     description: "Events & catering CRM — leads, win rate, booked revenue, and pipeline value.",
+    bg: bgPipeline,
   },
 ] as const;
 
