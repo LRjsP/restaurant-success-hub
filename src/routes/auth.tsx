@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import { useServerFn } from "@tanstack/react-start";
+import { ensureDemoUser, DEMO_EMAIL, DEMO_PASSWORD } from "@/lib/demo-user.functions";
 
 export const Route = createFileRoute("/auth")({
   ssr: false,
@@ -14,6 +16,7 @@ export const Route = createFileRoute("/auth")({
 
 function AuthPage() {
   const navigate = useNavigate();
+  const ensureDemo = useServerFn(ensureDemoUser);
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -24,6 +27,12 @@ function AuthPage() {
       if (data.user) navigate({ to: "/floor" });
     });
   }, [navigate]);
+
+  const friendlyError = (msg: string) => {
+    if (/weak_password|pwned|known to be weak/i.test(msg))
+      return "That password appears in known data breaches. Try the demo account or a stronger password (12+ chars, mixed).";
+    return msg;
+  };
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,7 +51,25 @@ function AuthPage() {
       if (error) throw error;
       navigate({ to: "/floor" });
     } catch (err: any) {
-      toast.error(err.message ?? "Authentication failed");
+      toast.error(friendlyError(err.message ?? "Authentication failed"));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const useDemo = async () => {
+    setLoading(true);
+    try {
+      await ensureDemo();
+      const { error } = await supabase.auth.signInWithPassword({
+        email: DEMO_EMAIL,
+        password: DEMO_PASSWORD,
+      });
+      if (error) throw error;
+      toast.success("Signed in as demo");
+      navigate({ to: "/floor" });
+    } catch (err: any) {
+      toast.error(err.message ?? "Could not sign in to demo");
     } finally {
       setLoading(false);
     }
@@ -105,6 +132,15 @@ function AuthPage() {
             {mode === "signin" ? "Need an account? Sign up" : "Have an account? Sign in"}
           </button>
         </form>
+
+        <button
+          type="button"
+          onClick={useDemo}
+          disabled={loading}
+          className="mt-4 w-full rounded-md border border-dashed border-border bg-card/50 p-3 text-center font-mono text-[10px] uppercase tracking-widest text-muted-foreground hover:text-foreground hover:border-accent"
+        >
+          Use demo account ({DEMO_EMAIL} / {DEMO_PASSWORD})
+        </button>
       </div>
     </div>
   );
