@@ -11,6 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { LogOut } from "lucide-react";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 const TABS = [
   { to: "/floor", label: "The Floor", hint: "Daily Pulse" },
@@ -80,6 +81,7 @@ export function DashboardShell({
                 Live Service
               </span>
             </div>
+            <ThemeToggle />
             <Button variant="ghost" size="sm" onClick={handleSignOut} className="text-muted-foreground hover:text-foreground">
               <LogOut className="h-3.5 w-3.5" />
             </Button>
