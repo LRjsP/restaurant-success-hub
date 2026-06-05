@@ -107,7 +107,7 @@ export function computeFloorKpis(days: DemoDay[]) {
     tableTurnsDelta: 2.1,
     discountPct: grossSales ? ((sum("discounts") + sum("comps")) / grossSales) * 100 : 0,
     discountPctDelta: prevGrossSales
-      ? (((sum("discounts") + sum("comps")) / grossSales - (prevSum("discounts") + prevSum("comps")) / prevGrossSales) * 100
+      ? (((sum("discounts") + sum("comps")) / grossSales - (prevSum("discounts") + prevSum("comps")) / prevGrossSales)) * 100
       : 0,
     noShowRate: totalReservations ? (noShows / totalReservations) * 100 : 0,
     trend: days.map((d) => ({ date: d.date.slice(5), value: Math.round(d.netSales) })),
