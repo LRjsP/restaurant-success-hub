@@ -106,6 +106,14 @@ function OfficePage() {
           </div>
         </Panel>
       </div>
+
+      <Panel
+        title="Labor Demand by Day-Part"
+        subtitle="When the operation gets busy"
+        tooltip="Maps demand across day × hour so you can align labor cost with revenue intensity. Compare the busy bands here to your scheduled shifts — empty cells with high staffing are pure labor leakage."
+      >
+        <DayTimeHeatmap center={search.center} defaultMetric="netSales" />
+      </Panel>
     </div>
   );
 }
