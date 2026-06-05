@@ -1,5 +1,6 @@
 import { createFileRoute, getRouteApi } from "@tanstack/react-router";
 import { KpiTile, Panel } from "@/components/dashboard/KpiTile";
+import { DayTimeHeatmap } from "@/components/dashboard/Heatmap";
 import {
   generateDemoDays,
   computeOfficePnl,
@@ -40,6 +41,7 @@ function OfficePage() {
           delta={pnl.netSalesDelta}
           deltaLabel="vs previous"
           variant={pnl.netSalesDelta >= 0 ? "success" : "danger"}
+          tooltip="Total revenue after discounts and comps. The top line of the P&L — everything else is measured against this number."
         />
         <KpiTile
           label="Operating Profit"
@@ -47,18 +49,21 @@ function OfficePage() {
           delta={pnl.profitDelta}
           deltaLabel={`${pnl.margin.toFixed(1)}% margin`}
           variant={pnl.profit >= 0 ? "success" : "danger"}
+          tooltip="What's left after labor, cost of goods, and fixed costs (rent, utilities, insurance). Healthy independents target 8–15% margin."
         />
         <KpiTile
           label="Labor %"
           value={`${pnl.laborPct.toFixed(1)}%`}
           hint="Target < 30%"
           variant={pnl.laborPct > 32 ? "warning" : "default"}
+          tooltip="Total labor cost as a share of net revenue. Includes wages, tips paid out, and payroll taxes. Above 32% usually signals overstaffing or weak sales."
         />
         <KpiTile
           label="COGS %"
           value={`${pnl.cogsPct.toFixed(1)}%`}
           hint="Target < 32%"
           variant={pnl.cogsPct > 33 ? "warning" : "default"}
+          tooltip="Cost of Goods Sold as a share of net revenue — food and beverage purchases. Above target points to waste, theft, over-portioning, or supplier price creep."
         />
       </div>
 
@@ -101,6 +106,14 @@ function OfficePage() {
           </div>
         </Panel>
       </div>
+
+      <Panel
+        title="Labor Demand by Day-Part"
+        subtitle="When the operation gets busy"
+        tooltip="Maps demand across day × hour so you can align labor cost with revenue intensity. Compare the busy bands here to your scheduled shifts — empty cells with high staffing are pure labor leakage."
+      >
+        <DayTimeHeatmap center={search.center} defaultMetric="netSales" />
+      </Panel>
     </div>
   );
 }

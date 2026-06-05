@@ -1,6 +1,7 @@
 import { createFileRoute, Link, getRouteApi } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { KpiTile, Panel } from "@/components/dashboard/KpiTile";
+import { DayTimeHeatmap } from "@/components/dashboard/Heatmap";
 import {
   generateDemoDays,
   computeFloorKpis,
@@ -91,6 +92,7 @@ function FloorPage() {
           delta={kpis.netSalesDelta}
           deltaLabel="vs previous"
           variant={kpis.netSalesDelta >= 0 ? "success" : "danger"}
+          tooltip="Total revenue from food and beverage after discounts and comps. The headline number for how much money came in during the period."
         />
         <KpiTile
           label="Covers"
@@ -98,6 +100,7 @@ function FloorPage() {
           delta={kpis.coversDelta}
           deltaLabel="vs previous"
           variant={kpis.coversDelta >= 0 ? "success" : "danger"}
+          tooltip="Number of guests served. One cover = one diner. Rising covers signal demand; falling covers can foreshadow revenue dips."
         />
         <KpiTile
           label="PPA"
@@ -105,6 +108,7 @@ function FloorPage() {
           delta={kpis.ppaDelta}
           deltaLabel="vs previous"
           variant={kpis.ppaDelta >= 0 ? "success" : "danger"}
+          tooltip="Per Person Average — net sales divided by covers. Measures how much each guest spends. Driven by menu mix, upselling, and pricing."
         />
         <KpiTile
           label="Avg Check"
@@ -112,6 +116,7 @@ function FloorPage() {
           delta={kpis.avgCheckDelta}
           deltaLabel="vs previous"
           variant={kpis.avgCheckDelta >= 0 ? "success" : "danger"}
+          tooltip="Average ticket value per table (net sales ÷ tables served). Differs from PPA because tables seat multiple guests."
         />
         <KpiTile
           label="Discount %"
@@ -119,6 +124,7 @@ function FloorPage() {
           delta={kpis.discountPctDelta}
           deltaLabel="vs previous"
           variant={kpis.discountPct > 5 ? "warning" : "default"}
+          tooltip="Share of gross sales given away as discounts and comps. Healthy range is under 4%. Spikes can indicate service issues or staff overuse."
         />
       </div>
 
@@ -194,6 +200,14 @@ function FloorPage() {
           </div>
         </Panel>
       </div>
+
+      <Panel
+        title="Day × Time Heatmap"
+        subtitle="When the operation gets busy"
+        tooltip="Shows demand intensity across days of the week and hours of the day. Darker cells mean busier slots. Use this to plan staffing, prep, and reservation availability. Toggle between guest count and revenue."
+      >
+        <DayTimeHeatmap center={search.center} defaultMetric="covers" />
+      </Panel>
     </div>
   );
 }

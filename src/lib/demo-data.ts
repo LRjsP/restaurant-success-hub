@@ -321,3 +321,45 @@ export const demoAlerts = [
   { type: "inventory" as const, severity: "info" as const, message: "Ribeye inventory below par — 6 portions remaining", time: "4h ago" },
   { type: "no_show" as const, severity: "warning" as const, message: "3 no-shows in last hour — VIP table held", time: "30m ago" },
 ];
+
+// ---------- Day x Time Heatmap ----------
+export const HEATMAP_HOURS = [11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 0];
+export const HEATMAP_DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+export interface HeatmapCell {
+  day: number; // 0..6
+  hour: number; // 0..23
+  covers: number;
+  netSales: number;
+}
+
+// Hour-of-day shape: lunch bump 12-14, dinner peak 18-21.
+function hourFactor(h: number) {
+  const map: Record<number, number> = {
+    11: 0.25, 12: 0.85, 13: 0.95, 14: 0.55, 15: 0.18, 16: 0.2, 17: 0.45,
+    18: 0.9, 19: 1.25, 20: 1.35, 21: 1.1, 22: 0.7, 23: 0.4, 0: 0.18,
+  };
+  return map[h] ?? 0.1;
+}
+
+export function generateHeatmap(center = "all"): HeatmapCell[] {
+  const mix = CENTER_MIX[center] ?? CENTER_MIX.all;
+  const cells: HeatmapCell[] = [];
+  for (let day = 0; day < 7; day++) {
+    const df = dayOfWeekFactor(day);
+    for (const hour of HEATMAP_HOURS) {
+      const r = rng(`hm-${center}-${day}-${hour}`);
+      const hf = hourFactor(hour);
+      const baseCovers = 22 * mix.share * df * hf * (0.85 + r() * 0.3);
+      const covers = Math.max(0, Math.round(baseCovers));
+      const ppa = (38 + r() * 22) * mix.ppaMul;
+      cells.push({
+        day,
+        hour,
+        covers,
+        netSales: Math.round(covers * ppa),
+      });
+    }
+  }
+  return cells;
+}

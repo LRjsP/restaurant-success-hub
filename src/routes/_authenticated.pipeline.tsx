@@ -57,10 +57,31 @@ function PipelinePage() {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <KpiTile label="Open Pipeline" value={fmtCurrency(totalPipeline)} hint={`${events.filter((e) => e.stage !== "Lost").length} active`} />
-        <KpiTile label="Confirmed" value={fmtCurrency(confirmedValue)} variant="success" hint="Booked + deposit" />
-        <KpiTile label="Win Rate" value={`${winRate.toFixed(1)}%`} hint="Deposit paid / all" />
-        <KpiTile label="Upcoming Guests" value={fmtNumber(upcomingGuests)} hint={`Next ${span} days`} />
+        <KpiTile
+          label="Open Pipeline"
+          value={fmtCurrency(totalPipeline)}
+          hint={`${events.filter((e) => e.stage !== "Lost").length} active`}
+          tooltip="Combined potential revenue of every event still in play (excludes Lost). Your forward-looking demand signal for private dining and catering."
+        />
+        <KpiTile
+          label="Confirmed"
+          value={fmtCurrency(confirmedValue)}
+          variant="success"
+          hint="Booked + deposit"
+          tooltip="Revenue from events that are Confirmed or have a Deposit Paid. Treat this as near-cash — staff and inventory should be planned against it."
+        />
+        <KpiTile
+          label="Win Rate"
+          value={`${winRate.toFixed(1)}%`}
+          hint="Deposit paid / all"
+          tooltip="Share of all leads that converted to a paid deposit. Indicates the health of your inquiry-to-booking process. Below 20% usually means slow responses or weak proposals."
+        />
+        <KpiTile
+          label="Upcoming Guests"
+          value={fmtNumber(upcomingGuests)}
+          hint={`Next ${span} days`}
+          tooltip="Total guests across in-horizon events. Use this for prep, sourcing, and front-of-house staffing decisions for the period."
+        />
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
