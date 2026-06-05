@@ -93,11 +93,15 @@ export function DashboardShell({
                         )}
                       </Link>
                     </TooltipTrigger>
-                    <TooltipContent side="bottom" align="start" className="max-w-[260px]">
-                      <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-1">
+                    <TooltipContent
+                      side="bottom"
+                      align="start"
+                      className="max-w-[260px] border border-border bg-popover text-popover-foreground shadow-md"
+                    >
+                      <div className="font-mono text-[10px] uppercase tracking-widest text-accent mb-1">
                         {t.hint}
                       </div>
-                      <p className="text-xs leading-snug">{t.description}</p>
+                      <p className="text-xs leading-snug text-popover-foreground/90">{t.description}</p>
                     </TooltipContent>
                   </Tooltip>
                 );
