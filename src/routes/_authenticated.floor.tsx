@@ -130,37 +130,38 @@ function FloorPage() {
               <AreaChart data={kpis.trend} margin={{ top: 8, right: 8, left: -8, bottom: 0 }}>
                 <defs>
                   <linearGradient id="salesGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="hsl(24 95% 55%)" stopOpacity={0.25} />
-                    <stop offset="95%" stopColor="hsl(24 95% 55%)" stopOpacity={0} />
+                    <stop offset="5%" stopColor="var(--color-chart-1)" stopOpacity={0.25} />
+                    <stop offset="95%" stopColor="var(--color-chart-1)" stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(220 15% 15%)" vertical={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
                 <XAxis
                   dataKey="date"
-                  tick={{ fill: "hsl(220 8% 55%)", fontSize: 10, fontFamily: "JetBrains Mono, monospace" }}
+                  tick={{ fill: "var(--color-muted-foreground)", fontSize: 10, fontFamily: "JetBrains Mono, monospace" }}
                   axisLine={false}
                   tickLine={false}
                 />
                 <YAxis
-                  tick={{ fill: "hsl(220 8% 55%)", fontSize: 10, fontFamily: "JetBrains Mono, monospace" }}
+                  tick={{ fill: "var(--color-muted-foreground)", fontSize: 10, fontFamily: "JetBrains Mono, monospace" }}
                   axisLine={false}
                   tickLine={false}
                   tickFormatter={(v: number) => `$${(v / 1000).toFixed(0)}k`}
                 />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: "hsl(220 15% 8%)",
-                    border: "1px solid hsl(220 15% 15%)",
+                    backgroundColor: "var(--color-card)",
+                    border: "1px solid var(--color-border)",
                     borderRadius: "6px",
                     fontSize: "12px",
                     fontFamily: "JetBrains Mono, monospace",
+                    color: "var(--color-foreground)",
                   }}
                   formatter={(value: number) => [fmtCurrency(value), "Net Sales"]}
                 />
                 <Area
                   type="monotone"
                   dataKey="value"
-                  stroke="hsl(24 95% 55%)"
+                  stroke="var(--color-chart-1)"
                   strokeWidth={2}
                   fill="url(#salesGrad)"
                 />
