@@ -5,7 +5,6 @@ import { dashboardSearchSchema } from "@/lib/dashboard-search";
 import { zodValidator } from "@tanstack/zod-adapter";
 
 export const Route = createFileRoute("/_authenticated")({
-  ssr: false,
   validateSearch: zodValidator(dashboardSearchSchema),
   component: AuthLayout,
 });
