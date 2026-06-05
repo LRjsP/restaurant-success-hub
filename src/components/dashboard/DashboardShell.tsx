@@ -199,6 +199,7 @@ export function DashboardShell({
       </header>
 
       <main className="p-6">{children}</main>
+      </div>
     </div>
   );
 }
