@@ -12,12 +12,33 @@ import {
 } from "@/components/ui/select";
 import { LogOut } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 const TABS = [
-  { to: "/floor", label: "The Floor", hint: "Daily Pulse" },
-  { to: "/office", label: "The Office", hint: "Weekly P&L" },
-  { to: "/architect", label: "The Architect", hint: "Yield & Menu" },
-  { to: "/pipeline", label: "The Pipeline", hint: "CRM & Events" },
+  {
+    to: "/floor",
+    label: "The Floor",
+    hint: "Daily Pulse",
+    description: "Real-time service performance — covers, net sales, PPA, and day×time demand patterns.",
+  },
+  {
+    to: "/office",
+    label: "The Office",
+    hint: "Weekly P&L",
+    description: "Financial health — labor %, COGS %, prime cost, and weekly P&L summary.",
+  },
+  {
+    to: "/architect",
+    label: "The Architect",
+    hint: "Yield & Menu",
+    description: "Menu engineering — item-level margin, mix, and yield optimization.",
+  },
+  {
+    to: "/pipeline",
+    label: "The Pipeline",
+    hint: "CRM & Events",
+    description: "Events & catering CRM — leads, win rate, booked revenue, and pipeline value.",
+  },
 ] as const;
 
 export function DashboardShell({
@@ -57,19 +78,28 @@ export function DashboardShell({
               {TABS.map((t) => {
                 const active = pathname === t.to;
                 return (
-                  <Link
-                    key={t.to}
-                    to={t.to}
-                    search={(prev: any) => prev}
-                    className={`group relative flex h-full items-center px-3 text-sm font-medium transition-colors ${
-                      active ? "text-foreground" : "text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    <span>{t.label}</span>
-                    {active && (
-                      <span className="absolute bottom-0 left-2 right-2 h-[2px] bg-accent" />
-                    )}
-                  </Link>
+                  <Tooltip key={t.to}>
+                    <TooltipTrigger asChild>
+                      <Link
+                        to={t.to}
+                        search={(prev: any) => prev}
+                        className={`group relative flex h-full items-center px-3 text-sm font-medium transition-colors ${
+                          active ? "text-foreground" : "text-muted-foreground hover:text-foreground"
+                        }`}
+                      >
+                        <span>{t.label}</span>
+                        {active && (
+                          <span className="absolute bottom-0 left-2 right-2 h-[2px] bg-accent" />
+                        )}
+                      </Link>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" align="start" className="max-w-[260px]">
+                      <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-1">
+                        {t.hint}
+                      </div>
+                      <p className="text-xs leading-snug">{t.description}</p>
+                    </TooltipContent>
+                  </Tooltip>
                 );
               })}
             </nav>
