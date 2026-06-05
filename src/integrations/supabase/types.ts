@@ -14,7 +14,285 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      alerts: {
+        Row: {
+          created_at: string
+          id: string
+          message: string
+          occurred_at: string
+          resolved: boolean
+          severity: string
+          type: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message: string
+          occurred_at?: string
+          resolved?: boolean
+          severity?: string
+          type: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string
+          occurred_at?: string
+          resolved?: boolean
+          severity?: string
+          type?: string
+        }
+        Relationships: []
+      }
+      daily_metrics: {
+        Row: {
+          available_seats: number
+          beer_cost: number
+          beer_sales: number
+          beverage_cost: number
+          beverage_sales: number
+          comps: number
+          covers: number
+          created_at: string
+          date: string
+          discounts: number
+          food_cost: number
+          food_sales: number
+          gross_sales: number
+          hours_open: number
+          id: string
+          labor_cost: number
+          labor_hours: number
+          liquor_cost: number
+          liquor_sales: number
+          net_sales: number
+          no_shows: number
+          revenue_center: string
+          tables_served: number
+          total_reservations: number
+          wine_cost: number
+          wine_sales: number
+        }
+        Insert: {
+          available_seats?: number
+          beer_cost?: number
+          beer_sales?: number
+          beverage_cost?: number
+          beverage_sales?: number
+          comps?: number
+          covers?: number
+          created_at?: string
+          date: string
+          discounts?: number
+          food_cost?: number
+          food_sales?: number
+          gross_sales?: number
+          hours_open?: number
+          id?: string
+          labor_cost?: number
+          labor_hours?: number
+          liquor_cost?: number
+          liquor_sales?: number
+          net_sales?: number
+          no_shows?: number
+          revenue_center?: string
+          tables_served?: number
+          total_reservations?: number
+          wine_cost?: number
+          wine_sales?: number
+        }
+        Update: {
+          available_seats?: number
+          beer_cost?: number
+          beer_sales?: number
+          beverage_cost?: number
+          beverage_sales?: number
+          comps?: number
+          covers?: number
+          created_at?: string
+          date?: string
+          discounts?: number
+          food_cost?: number
+          food_sales?: number
+          gross_sales?: number
+          hours_open?: number
+          id?: string
+          labor_cost?: number
+          labor_hours?: number
+          liquor_cost?: number
+          liquor_sales?: number
+          net_sales?: number
+          no_shows?: number
+          revenue_center?: string
+          tables_served?: number
+          total_reservations?: number
+          wine_cost?: number
+          wine_sales?: number
+        }
+        Relationships: []
+      }
+      digital_activity: {
+        Row: {
+          cart_completed: number
+          cart_starts: number
+          created_at: string
+          date: string
+          id: string
+          mau: number
+          online_orders: number
+        }
+        Insert: {
+          cart_completed?: number
+          cart_starts?: number
+          created_at?: string
+          date: string
+          id?: string
+          mau?: number
+          online_orders?: number
+        }
+        Update: {
+          cart_completed?: number
+          cart_starts?: number
+          created_at?: string
+          date?: string
+          id?: string
+          mau?: number
+          online_orders?: number
+        }
+        Relationships: []
+      }
+      events_pipeline: {
+        Row: {
+          company: string | null
+          contact_name: string
+          created_at: string
+          event_date: string | null
+          id: string
+          notes: string | null
+          stage: string
+          value: number
+        }
+        Insert: {
+          company?: string | null
+          contact_name: string
+          created_at?: string
+          event_date?: string | null
+          id?: string
+          notes?: string | null
+          stage?: string
+          value?: number
+        }
+        Update: {
+          company?: string | null
+          contact_name?: string
+          created_at?: string
+          event_date?: string | null
+          id?: string
+          notes?: string | null
+          stage?: string
+          value?: number
+        }
+        Relationships: []
+      }
+      guests: {
+        Row: {
+          created_at: string
+          email: string | null
+          id: string
+          last_visit_at: string | null
+          lifetime_value: number
+          name: string
+          tier: string
+          visit_count: number
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          last_visit_at?: string | null
+          lifetime_value?: number
+          name: string
+          tier?: string
+          visit_count?: number
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          last_visit_at?: string | null
+          lifetime_value?: number
+          name?: string
+          tier?: string
+          visit_count?: number
+        }
+        Relationships: []
+      }
+      hourly_metrics: {
+        Row: {
+          available_seats: number
+          covers: number
+          created_at: string
+          date: string
+          hour: number
+          id: string
+          revenue: number
+          revenue_center: string
+        }
+        Insert: {
+          available_seats?: number
+          covers?: number
+          created_at?: string
+          date: string
+          hour: number
+          id?: string
+          revenue?: number
+          revenue_center?: string
+        }
+        Update: {
+          available_seats?: number
+          covers?: number
+          created_at?: string
+          date?: string
+          hour?: number
+          id?: string
+          revenue?: number
+          revenue_center?: string
+        }
+        Relationships: []
+      }
+      menu_items: {
+        Row: {
+          category: string
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          plate_cost: number
+          price: number
+          units_sold_30d: number
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          plate_cost: number
+          price: number
+          units_sold_30d?: number
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          plate_cost?: number
+          price?: number
+          units_sold_30d?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
