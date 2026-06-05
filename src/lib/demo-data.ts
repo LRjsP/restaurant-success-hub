@@ -1,4 +1,6 @@
-// Deterministic client-side demo data generator — no server/auth required
+// Deterministic client-side demo data — driven by date range + revenue center.
+
+import { DATE_PRESETS, type DatePreset } from "@/lib/format";
 
 function rng(seed: string) {
   let h = 2166136261;
@@ -14,8 +16,24 @@ function rng(seed: string) {
 }
 
 function dayOfWeekFactor(dow: number) {
+  // Sun, Mon..Sat
   const map = [1.05, 0.55, 0.65, 0.7, 0.85, 1.25, 1.4];
   return map[dow];
+}
+
+// Revenue center weights (share of total + PPA modifier)
+const CENTER_MIX: Record<string, { share: number; ppaMul: number; seats: number }> = {
+  all: { share: 1, ppaMul: 1, seats: 150 },
+  dining_room: { share: 0.45, ppaMul: 1.15, seats: 80 },
+  bar: { share: 0.18, ppaMul: 0.7, seats: 30 },
+  patio: { share: 0.12, ppaMul: 1.0, seats: 40 },
+  takeout: { share: 0.1, ppaMul: 0.8, seats: 0 },
+  delivery: { share: 0.1, ppaMul: 0.85, seats: 0 },
+  catering: { share: 0.05, ppaMul: 1.4, seats: 0 },
+};
+
+export function daysForPreset(p: DatePreset) {
+  return DATE_PRESETS.find((d) => d.value === p)?.days ?? 7;
 }
 
 export interface DemoDay {
@@ -26,27 +44,32 @@ export interface DemoDay {
   discounts: number;
   comps: number;
   grossSales: number;
+  food: number;
+  beverage: number;
+  labor: number;
+  cogs: number;
   availableSeats: number;
   hoursOpen: number;
   noShows: number;
   totalReservations: number;
 }
 
-export function generateDemoDays(days = 7): DemoDay[] {
+export function generateDemoDays(days: number, center = "all", offset = 0): DemoDay[] {
   const today = new Date();
   today.setUTCHours(0, 0, 0, 0);
+  const mix = CENTER_MIX[center] ?? CENTER_MIX.all;
   const results: DemoDay[] = [];
 
   for (let i = days - 1; i >= 0; i--) {
     const d = new Date(today);
-    d.setUTCDate(d.getUTCDate() - i);
+    d.setUTCDate(d.getUTCDate() - i - offset);
     const iso = d.toISOString().slice(0, 10);
     const dow = d.getUTCDay();
     const df = dayOfWeekFactor(dow);
-    const r = rng(iso);
+    const r = rng(iso + center);
 
-    const baseCovers = Math.round(180 * df * (0.85 + r() * 0.3));
-    const ppa = 38 + r() * 22;
+    const baseCovers = Math.max(8, Math.round(180 * mix.share * df * (0.85 + r() * 0.3)));
+    const ppa = (38 + r() * 22) * mix.ppaMul;
     const netSales = baseCovers * ppa;
     const grossSales = netSales * (1 + 0.02 + r() * 0.04);
     const discounts = grossSales * (0.01 + r() * 0.03);
@@ -54,6 +77,11 @@ export function generateDemoDays(days = 7): DemoDay[] {
     const tablesServed = Math.round(baseCovers / (2.2 + r() * 0.6));
     const reservations = Math.round(baseCovers * (0.7 + r() * 0.2));
     const noShows = Math.round(reservations * (0.04 + r() * 0.06));
+    const beverageShare = 0.22 + r() * 0.1;
+    const beverage = netSales * beverageShare;
+    const food = netSales - beverage;
+    const labor = netSales * (0.27 + r() * 0.05);
+    const cogs = netSales * (0.3 + r() * 0.04);
 
     results.push({
       date: iso,
@@ -63,7 +91,11 @@ export function generateDemoDays(days = 7): DemoDay[] {
       discounts: Math.round(discounts),
       comps: Math.round(comps),
       grossSales: Math.round(grossSales),
-      availableSeats: 80 + 30 + 40, // dining + bar + patio
+      food: Math.round(food),
+      beverage: Math.round(beverage),
+      labor: Math.round(labor),
+      cogs: Math.round(cogs),
+      availableSeats: Math.max(40, mix.seats + 20),
       hoursOpen: 11,
       noShows,
       totalReservations: reservations,
@@ -72,48 +104,216 @@ export function generateDemoDays(days = 7): DemoDay[] {
   return results;
 }
 
-export function computeFloorKpis(days: DemoDay[]) {
-  const sum = (k: keyof DemoDay) => days.reduce((a, d) => a + (d[k] as number), 0);
-  const prevDays = generateDemoDays(7).slice(0, 7);
-  const prevSum = (k: keyof DemoDay) => prevDays.reduce((a, d) => a + (d[k] as number), 0);
+// Compress N days into ~24 buckets for charts on long ranges
+export function compressTrend(days: DemoDay[], maxPoints = 30) {
+  if (days.length <= maxPoints) {
+    return days.map((d) => ({ date: d.date.slice(5), value: d.netSales, covers: d.covers }));
+  }
+  const bucketSize = Math.ceil(days.length / maxPoints);
+  const buckets: { date: string; value: number; covers: number }[] = [];
+  for (let i = 0; i < days.length; i += bucketSize) {
+    const slice = days.slice(i, i + bucketSize);
+    const value = slice.reduce((a, d) => a + d.netSales, 0);
+    const covers = slice.reduce((a, d) => a + d.covers, 0);
+    buckets.push({ date: slice[0].date.slice(5), value, covers });
+  }
+  return buckets;
+}
 
-  const netSales = sum("netSales");
-  const prevNetSales = prevSum("netSales");
-  const covers = sum("covers");
-  const prevCovers = prevSum("covers");
-  const tablesServed = sum("tablesServed");
-  const prevTablesServed = prevSum("tablesServed");
-  const grossSales = sum("grossSales");
-  const prevGrossSales = prevSum("grossSales");
-  const totalReservations = sum("totalReservations");
-  const noShows = sum("noShows");
+export function computeFloorKpis(days: DemoDay[], prev: DemoDay[]) {
+  const sum = (arr: DemoDay[], k: keyof DemoDay) =>
+    arr.reduce((a, d) => a + (d[k] as number), 0);
+
+  const netSales = sum(days, "netSales");
+  const prevNetSales = sum(prev, "netSales");
+  const covers = sum(days, "covers");
+  const prevCovers = sum(prev, "covers");
+  const tablesServed = sum(days, "tablesServed");
+  const prevTablesServed = sum(prev, "tablesServed");
+  const grossSales = sum(days, "grossSales");
+  const prevGrossSales = sum(prev, "grossSales");
+  const totalReservations = sum(days, "totalReservations");
+  const noShows = sum(days, "noShows");
+
+  const pct = (a: number, b: number) => (b ? ((a - b) / b) * 100 : 0);
 
   return {
     netSales,
-    netSalesDelta: prevNetSales ? ((netSales - prevNetSales) / prevNetSales) * 100 : 0,
+    netSalesDelta: pct(netSales, prevNetSales),
     covers,
-    coversDelta: prevCovers ? ((covers - prevCovers) / prevCovers) * 100 : 0,
+    coversDelta: pct(covers, prevCovers),
     ppa: covers ? netSales / covers : 0,
-    ppaDelta: prevCovers && prevNetSales
-      ? ((netSales / covers - prevNetSales / prevCovers) / (prevNetSales / prevCovers)) * 100
-      : 0,
+    ppaDelta: pct(covers ? netSales / covers : 0, prevCovers ? prevNetSales / prevCovers : 0),
     avgCheck: tablesServed ? netSales / tablesServed : 0,
-    avgCheckDelta: prevTablesServed && prevNetSales
-      ? ((netSales / tablesServed - prevNetSales / prevTablesServed) / (prevNetSales / prevTablesServed)) * 100
-      : 0,
-    tableTurns: tablesServed && days.length
-      ? tablesServed / ((days[0].availableSeats / 2) * days[0].hoursOpen / days.length)
-      : 0,
-    tableTurnsDelta: 2.1,
-    discountPct: grossSales ? ((sum("discounts") + sum("comps")) / grossSales) * 100 : 0,
-    discountPctDelta: prevGrossSales
-      ? (((sum("discounts") + sum("comps")) / grossSales - (prevSum("discounts") + prevSum("comps")) / prevGrossSales)) * 100
-      : 0,
+    avgCheckDelta: pct(
+      tablesServed ? netSales / tablesServed : 0,
+      prevTablesServed ? prevNetSales / prevTablesServed : 0,
+    ),
+    discountPct: grossSales ? ((sum(days, "discounts") + sum(days, "comps")) / grossSales) * 100 : 0,
+    discountPctDelta: pct(
+      grossSales ? (sum(days, "discounts") + sum(days, "comps")) / grossSales : 0,
+      prevGrossSales ? (sum(prev, "discounts") + sum(prev, "comps")) / prevGrossSales : 0,
+    ),
     noShowRate: totalReservations ? (noShows / totalReservations) * 100 : 0,
-    trend: days.map((d) => ({ date: d.date.slice(5), value: Math.round(d.netSales) })),
+    trend: compressTrend(days),
   };
 }
 
+// ---------- The Office: P&L ----------
+export function computeOfficePnl(days: DemoDay[], prev: DemoDay[]) {
+  const sum = (arr: DemoDay[], k: keyof DemoDay) =>
+    arr.reduce((a, d) => a + (d[k] as number), 0);
+  const netSales = sum(days, "netSales");
+  const prevNet = sum(prev, "netSales");
+  const food = sum(days, "food");
+  const beverage = sum(days, "beverage");
+  const labor = sum(days, "labor");
+  const cogs = sum(days, "cogs");
+  const fixed = netSales * 0.18; // rent + utilities + insurance approx
+  const profit = netSales - labor - cogs - fixed;
+  const prevProfit =
+    prevNet - sum(prev, "labor") - sum(prev, "cogs") - prevNet * 0.18;
+
+  const pct = (a: number, b: number) => (b ? ((a - b) / b) * 100 : 0);
+
+  return {
+    netSales,
+    food,
+    beverage,
+    labor,
+    laborPct: netSales ? (labor / netSales) * 100 : 0,
+    cogs,
+    cogsPct: netSales ? (cogs / netSales) * 100 : 0,
+    fixed,
+    profit,
+    profitDelta: pct(profit, prevProfit),
+    margin: netSales ? (profit / netSales) * 100 : 0,
+    netSalesDelta: pct(netSales, prevNet),
+    series: compressTrend(days).map((b, i) => ({
+      ...b,
+      labor: Math.round(days[i]?.labor ?? b.value * 0.28),
+      cogs: Math.round(days[i]?.cogs ?? b.value * 0.31),
+    })),
+    pnlRows: [
+      { label: "Food Sales", value: food, pct: netSales ? (food / netSales) * 100 : 0 },
+      { label: "Beverage Sales", value: beverage, pct: netSales ? (beverage / netSales) * 100 : 0 },
+      { label: "Net Revenue", value: netSales, pct: 100, bold: true },
+      { label: "Cost of Goods Sold", value: -cogs, pct: -(netSales ? (cogs / netSales) * 100 : 0) },
+      { label: "Labor", value: -labor, pct: -(netSales ? (labor / netSales) * 100 : 0) },
+      { label: "Fixed Costs", value: -fixed, pct: -18 },
+      { label: "Operating Profit", value: profit, pct: netSales ? (profit / netSales) * 100 : 0, bold: true },
+    ],
+  };
+}
+
+// ---------- The Architect: Menu items ----------
+export interface MenuItem {
+  name: string;
+  category: "Apps" | "Mains" | "Desserts" | "Drinks";
+  price: number;
+  cost: number;
+  sold: number;
+  revenue: number;
+  margin: number;
+  marginPct: number;
+  classification: "Star" | "Plowhorse" | "Puzzle" | "Dog";
+}
+
+const MENU_SEED: { name: string; category: MenuItem["category"]; price: number; cost: number; popularity: number }[] = [
+  { name: "Heirloom Tomato Burrata", category: "Apps", price: 18, cost: 5.2, popularity: 0.9 },
+  { name: "Tuna Tartare", category: "Apps", price: 21, cost: 7.8, popularity: 0.7 },
+  { name: "Charred Octopus", category: "Apps", price: 24, cost: 9.5, popularity: 0.45 },
+  { name: "Roasted Beet Salad", category: "Apps", price: 16, cost: 3.4, popularity: 0.55 },
+  { name: "Dry-Aged Ribeye 16oz", category: "Mains", price: 68, cost: 26, popularity: 0.85 },
+  { name: "Pan-Seared Halibut", category: "Mains", price: 42, cost: 14, popularity: 0.6 },
+  { name: "Bucatini Cacio e Pepe", category: "Mains", price: 28, cost: 5.5, popularity: 0.95 },
+  { name: "Roasted Chicken for Two", category: "Mains", price: 52, cost: 11, popularity: 0.5 },
+  { name: "Wagyu Burger", category: "Mains", price: 26, cost: 8, popularity: 0.88 },
+  { name: "Wild Mushroom Risotto", category: "Mains", price: 32, cost: 7, popularity: 0.65 },
+  { name: "Chocolate Tart", category: "Desserts", price: 14, cost: 2.8, popularity: 0.7 },
+  { name: "Olive Oil Cake", category: "Desserts", price: 12, cost: 1.9, popularity: 0.4 },
+  { name: "House Negroni", category: "Drinks", price: 16, cost: 3.2, popularity: 0.8 },
+  { name: "Sommelier Pour", category: "Drinks", price: 22, cost: 6.5, popularity: 0.6 },
+];
+
+export function computeMenuMatrix(totalCovers: number): MenuItem[] {
+  const items = MENU_SEED.map((m) => {
+    const r = rng(m.name);
+    const sold = Math.max(2, Math.round(totalCovers * 0.18 * m.popularity * (0.85 + r() * 0.3)));
+    const revenue = sold * m.price;
+    const margin = (m.price - m.cost) * sold;
+    const marginPct = ((m.price - m.cost) / m.price) * 100;
+    return { ...m, sold, revenue, margin, marginPct, classification: "Dog" as MenuItem["classification"] };
+  });
+  // Star = high popularity + high margin %, Plowhorse = high pop + low margin,
+  // Puzzle = low pop + high margin, Dog = low pop + low margin.
+  const avgSold = items.reduce((a, i) => a + i.sold, 0) / items.length;
+  const avgMargin = items.reduce((a, i) => a + i.marginPct, 0) / items.length;
+  return items.map((i) => {
+    const popHigh = i.sold >= avgSold;
+    const marHigh = i.marginPct >= avgMargin;
+    const classification: MenuItem["classification"] = popHigh && marHigh
+      ? "Star"
+      : popHigh
+      ? "Plowhorse"
+      : marHigh
+      ? "Puzzle"
+      : "Dog";
+    return { ...i, classification };
+  });
+}
+
+// ---------- The Pipeline: CRM + Events ----------
+export interface PipelineEvent {
+  id: string;
+  client: string;
+  type: "Private Dining" | "Wedding" | "Corporate" | "Tasting";
+  date: string;
+  guests: number;
+  value: number;
+  stage: "Inquiry" | "Proposal" | "Confirmed" | "Deposit Paid" | "Lost";
+}
+
+const CLIENTS = [
+  "Marlowe & Vance LLP",
+  "Heritage Capital Partners",
+  "The Kowalski Wedding",
+  "Northpoint Architects",
+  "Cedar & Pine Studio",
+  "Bellweather Foundation",
+  "Veritas Health Group",
+  "Pemberton Family",
+  "Tessera Holdings",
+  "Aria Tech Summit",
+  "Hartwell Estate",
+  "Brookline Society",
+];
+const TYPES: PipelineEvent["type"][] = ["Private Dining", "Wedding", "Corporate", "Tasting"];
+const STAGES: PipelineEvent["stage"][] = ["Inquiry", "Proposal", "Confirmed", "Deposit Paid", "Lost"];
+
+export function generatePipeline(range: DatePreset): PipelineEvent[] {
+  const horizon = Math.min(180, Math.max(14, daysForPreset(range) * 2));
+  const r = rng("pipeline" + range);
+  const today = new Date();
+  return CLIENTS.map((client, i) => {
+    const offset = Math.floor(r() * horizon) - 7;
+    const d = new Date(today);
+    d.setUTCDate(d.getUTCDate() + offset);
+    const guests = 8 + Math.floor(r() * 90);
+    const ppg = 95 + Math.floor(r() * 180);
+    return {
+      id: `EV-${1200 + i}`,
+      client,
+      type: TYPES[Math.floor(r() * TYPES.length)],
+      date: d.toISOString().slice(0, 10),
+      guests,
+      value: guests * ppg,
+      stage: STAGES[Math.floor(r() * STAGES.length)],
+    };
+  });
+}
+
+// ---------- Alerts ----------
 export const demoAlerts = [
   { type: "comp" as const, severity: "warning" as const, message: "Server #4 comp rate 7.2% — above 4% threshold", time: "1h ago" },
   { type: "overtime" as const, severity: "warning" as const, message: "Line cook Davis approaching 42h this week", time: "2h ago" },
