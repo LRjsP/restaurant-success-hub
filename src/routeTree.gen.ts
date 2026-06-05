@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedOfficeRouteImport } from './routes/_authenticated.office'
 import { Route as AuthenticatedFloorRouteImport } from './routes/_authenticated.floor'
 
 const AuthRoute = AuthRouteImport.update({
@@ -28,6 +29,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedOfficeRoute = AuthenticatedOfficeRouteImport.update({
+  id: '/office',
+  path: '/office',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedFloorRoute = AuthenticatedFloorRouteImport.update({
   id: '/floor',
   path: '/floor',
@@ -38,11 +44,13 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/floor': typeof AuthenticatedFloorRoute
+  '/office': typeof AuthenticatedOfficeRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/floor': typeof AuthenticatedFloorRoute
+  '/office': typeof AuthenticatedOfficeRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -50,13 +58,20 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/auth': typeof AuthRoute
   '/_authenticated/floor': typeof AuthenticatedFloorRoute
+  '/_authenticated/office': typeof AuthenticatedOfficeRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/floor'
+  fullPaths: '/' | '/auth' | '/floor' | '/office'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/floor'
-  id: '__root__' | '/' | '/_authenticated' | '/auth' | '/_authenticated/floor'
+  to: '/' | '/auth' | '/floor' | '/office'
+  id:
+    | '__root__'
+    | '/'
+    | '/_authenticated'
+    | '/auth'
+    | '/_authenticated/floor'
+    | '/_authenticated/office'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -88,6 +103,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/office': {
+      id: '/_authenticated/office'
+      path: '/office'
+      fullPath: '/office'
+      preLoaderRoute: typeof AuthenticatedOfficeRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/floor': {
       id: '/_authenticated/floor'
       path: '/floor'
@@ -100,10 +122,12 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteChildren {
   AuthenticatedFloorRoute: typeof AuthenticatedFloorRoute
+  AuthenticatedOfficeRoute: typeof AuthenticatedOfficeRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedFloorRoute: AuthenticatedFloorRoute,
+  AuthenticatedOfficeRoute: AuthenticatedOfficeRoute,
 }
 
 const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
@@ -118,3 +142,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
