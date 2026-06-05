@@ -200,6 +200,14 @@ function FloorPage() {
           </div>
         </Panel>
       </div>
+
+      <Panel
+        title="Day × Time Heatmap"
+        subtitle="When the operation gets busy"
+        tooltip="Shows demand intensity across days of the week and hours of the day. Darker cells mean busier slots. Use this to plan staffing, prep, and reservation availability. Toggle between guest count and revenue."
+      >
+        <DayTimeHeatmap center={search.center} defaultMetric="covers" />
+      </Panel>
     </div>
   );
 }
