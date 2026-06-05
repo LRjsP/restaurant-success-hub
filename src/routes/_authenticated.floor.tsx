@@ -1,12 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Outlet } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_authenticated/floor")({
-  component: () => <Outlet />,
+  component: FloorPage,
 });
 
 function FloorPage() {
-  return <div className="font-mono text-sm text-muted-foreground">Floor — coming soon.</div>;
+  return (
+    <div className="font-mono text-sm text-muted-foreground">
+      The Floor — Daily Pulse. KPI tiles coming next.
+    </div>
+  );
 }
-
-Route.update({ component: FloorPage });
