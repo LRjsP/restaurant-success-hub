@@ -9,38 +9,113 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedPipelineRouteImport } from './routes/_authenticated.pipeline'
+import { Route as AuthenticatedOfficeRouteImport } from './routes/_authenticated.office'
+import { Route as AuthenticatedFloorRouteImport } from './routes/_authenticated.floor'
+import { Route as AuthenticatedArchitectRouteImport } from './routes/_authenticated.architect'
 
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedRoute = AuthenticatedRouteImport.update({
+  id: '/_authenticated',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedPipelineRoute = AuthenticatedPipelineRouteImport.update({
+  id: '/pipeline',
+  path: '/pipeline',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedOfficeRoute = AuthenticatedOfficeRouteImport.update({
+  id: '/office',
+  path: '/office',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedFloorRoute = AuthenticatedFloorRouteImport.update({
+  id: '/floor',
+  path: '/floor',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedArchitectRoute = AuthenticatedArchitectRouteImport.update({
+  id: '/architect',
+  path: '/architect',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
+  '/architect': typeof AuthenticatedArchitectRoute
+  '/floor': typeof AuthenticatedFloorRoute
+  '/office': typeof AuthenticatedOfficeRoute
+  '/pipeline': typeof AuthenticatedPipelineRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
+  '/architect': typeof AuthenticatedArchitectRoute
+  '/floor': typeof AuthenticatedFloorRoute
+  '/office': typeof AuthenticatedOfficeRoute
+  '/pipeline': typeof AuthenticatedPipelineRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/_authenticated': typeof AuthenticatedRouteWithChildren
+  '/auth': typeof AuthRoute
+  '/_authenticated/architect': typeof AuthenticatedArchitectRoute
+  '/_authenticated/floor': typeof AuthenticatedFloorRoute
+  '/_authenticated/office': typeof AuthenticatedOfficeRoute
+  '/_authenticated/pipeline': typeof AuthenticatedPipelineRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths: '/' | '/auth' | '/architect' | '/floor' | '/office' | '/pipeline'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to: '/' | '/auth' | '/architect' | '/floor' | '/office' | '/pipeline'
+  id:
+    | '__root__'
+    | '/'
+    | '/_authenticated'
+    | '/auth'
+    | '/_authenticated/architect'
+    | '/_authenticated/floor'
+    | '/_authenticated/office'
+    | '/_authenticated/pipeline'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
+  AuthRoute: typeof AuthRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -48,12 +123,70 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/pipeline': {
+      id: '/_authenticated/pipeline'
+      path: '/pipeline'
+      fullPath: '/pipeline'
+      preLoaderRoute: typeof AuthenticatedPipelineRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/office': {
+      id: '/_authenticated/office'
+      path: '/office'
+      fullPath: '/office'
+      preLoaderRoute: typeof AuthenticatedOfficeRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/floor': {
+      id: '/_authenticated/floor'
+      path: '/floor'
+      fullPath: '/floor'
+      preLoaderRoute: typeof AuthenticatedFloorRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/architect': {
+      id: '/_authenticated/architect'
+      path: '/architect'
+      fullPath: '/architect'
+      preLoaderRoute: typeof AuthenticatedArchitectRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
   }
 }
 
+interface AuthenticatedRouteChildren {
+  AuthenticatedArchitectRoute: typeof AuthenticatedArchitectRoute
+  AuthenticatedFloorRoute: typeof AuthenticatedFloorRoute
+  AuthenticatedOfficeRoute: typeof AuthenticatedOfficeRoute
+  AuthenticatedPipelineRoute: typeof AuthenticatedPipelineRoute
+}
+
+const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
+  AuthenticatedArchitectRoute: AuthenticatedArchitectRoute,
+  AuthenticatedFloorRoute: AuthenticatedFloorRoute,
+  AuthenticatedOfficeRoute: AuthenticatedOfficeRoute,
+  AuthenticatedPipelineRoute: AuthenticatedPipelineRoute,
+}
+
+const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
+  AuthenticatedRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuthenticatedRoute: AuthenticatedRouteWithChildren,
+  AuthRoute: AuthRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
