@@ -12,12 +12,33 @@ import {
 } from "@/components/ui/select";
 import { LogOut } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 const TABS = [
-  { to: "/floor", label: "The Floor", hint: "Daily Pulse" },
-  { to: "/office", label: "The Office", hint: "Weekly P&L" },
-  { to: "/architect", label: "The Architect", hint: "Yield & Menu" },
-  { to: "/pipeline", label: "The Pipeline", hint: "CRM & Events" },
+  {
+    to: "/floor",
+    label: "The Floor",
+    hint: "Daily Pulse",
+    description: "Real-time service performance — covers, net sales, PPA, and day×time demand patterns.",
+  },
+  {
+    to: "/office",
+    label: "The Office",
+    hint: "Weekly P&L",
+    description: "Financial health — labor %, COGS %, prime cost, and weekly P&L summary.",
+  },
+  {
+    to: "/architect",
+    label: "The Architect",
+    hint: "Yield & Menu",
+    description: "Menu engineering — item-level margin, mix, and yield optimization.",
+  },
+  {
+    to: "/pipeline",
+    label: "The Pipeline",
+    hint: "CRM & Events",
+    description: "Events & catering CRM — leads, win rate, booked revenue, and pipeline value.",
+  },
 ] as const;
 
 export function DashboardShell({
