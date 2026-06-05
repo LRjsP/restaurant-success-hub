@@ -14,6 +14,7 @@ import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedOfficeRouteImport } from './routes/_authenticated.office'
 import { Route as AuthenticatedFloorRouteImport } from './routes/_authenticated.floor'
+import { Route as AuthenticatedArchitectRouteImport } from './routes/_authenticated.architect'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -39,16 +40,23 @@ const AuthenticatedFloorRoute = AuthenticatedFloorRouteImport.update({
   path: '/floor',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedArchitectRoute = AuthenticatedArchitectRouteImport.update({
+  id: '/architect',
+  path: '/architect',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/architect': typeof AuthenticatedArchitectRoute
   '/floor': typeof AuthenticatedFloorRoute
   '/office': typeof AuthenticatedOfficeRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/architect': typeof AuthenticatedArchitectRoute
   '/floor': typeof AuthenticatedFloorRoute
   '/office': typeof AuthenticatedOfficeRoute
 }
@@ -57,19 +65,21 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/auth': typeof AuthRoute
+  '/_authenticated/architect': typeof AuthenticatedArchitectRoute
   '/_authenticated/floor': typeof AuthenticatedFloorRoute
   '/_authenticated/office': typeof AuthenticatedOfficeRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/floor' | '/office'
+  fullPaths: '/' | '/auth' | '/architect' | '/floor' | '/office'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/floor' | '/office'
+  to: '/' | '/auth' | '/architect' | '/floor' | '/office'
   id:
     | '__root__'
     | '/'
     | '/_authenticated'
     | '/auth'
+    | '/_authenticated/architect'
     | '/_authenticated/floor'
     | '/_authenticated/office'
   fileRoutesById: FileRoutesById
@@ -117,15 +127,24 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedFloorRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/architect': {
+      id: '/_authenticated/architect'
+      path: '/architect'
+      fullPath: '/architect'
+      preLoaderRoute: typeof AuthenticatedArchitectRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
   }
 }
 
 interface AuthenticatedRouteChildren {
+  AuthenticatedArchitectRoute: typeof AuthenticatedArchitectRoute
   AuthenticatedFloorRoute: typeof AuthenticatedFloorRoute
   AuthenticatedOfficeRoute: typeof AuthenticatedOfficeRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
+  AuthenticatedArchitectRoute: AuthenticatedArchitectRoute,
   AuthenticatedFloorRoute: AuthenticatedFloorRoute,
   AuthenticatedOfficeRoute: AuthenticatedOfficeRoute,
 }
