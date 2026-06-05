@@ -77,7 +77,6 @@ function ArchitectPage() {
           tooltip="Low-popularity, low-margin items. Candidates for removal — they take up menu real estate and prep capacity without earning their keep."
         />
       </div>
-      </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
         <Panel title="Menu Engineering Matrix" subtitle="Popularity vs Margin %" className="lg:col-span-3">
