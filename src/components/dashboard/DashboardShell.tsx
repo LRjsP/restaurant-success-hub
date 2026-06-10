@@ -1,5 +1,8 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { getMyRole } from "@/lib/users.functions";
 import { Button } from "@/components/ui/button";
 import { DATE_PRESETS, REVENUE_CENTERS } from "@/lib/format";
 import { type DashboardSearch } from "@/lib/dashboard-search";
@@ -10,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { LogOut } from "lucide-react";
+import { LogOut, Users } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import bgFloor from "@/assets/bg-floor.jpg";
