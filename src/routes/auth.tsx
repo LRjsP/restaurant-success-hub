@@ -1,10 +1,13 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
+import { useQuery } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { getDemoSetupStatus, seedInitialDemoUsers } from "@/lib/demo-user.functions";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/auth")({
@@ -19,6 +22,10 @@ function AuthPage() {
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [loading, setLoading] = useState(false);
+  const [setupLoading, setSetupLoading] = useState(false);
+  const fetchDemoStatus = useServerFn(getDemoSetupStatus);
+  const seedDemoUsers = useServerFn(seedInitialDemoUsers);
+  const demoStatus = useQuery({ queryKey: ["demo-setup-status"], queryFn: () => fetchDemoStatus() });
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -56,6 +63,25 @@ function AuthPage() {
     }
   };
 
+  const setupDemoAccounts = async () => {
+    setSetupLoading(true);
+    try {
+      const result = await seedDemoUsers();
+      const admin = result.accounts.find((account) => account.role === "admin");
+      if (admin) {
+        setMode("signin");
+        setEmail(admin.email);
+        setPassword(result.password);
+      }
+      await demoStatus.refetch();
+      toast.success("Demo admin and staff accounts are ready");
+    } catch (err: any) {
+      toast.error(err.message ?? "Could not create demo accounts");
+    } finally {
+      setSetupLoading(false);
+    }
+  };
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="w-full max-w-sm">
@@ -68,6 +94,29 @@ function AuthPage() {
           </h1>
           <p className="mt-1 text-xs text-muted-foreground">Restaurant operations intelligence</p>
         </div>
+
+        {demoStatus.data?.canSetupDemo && (
+          <div className="mb-5 rounded-sm border border-border bg-card p-4 text-sm">
+            <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+              First-time setup
+            </div>
+            <div className="mt-3 space-y-2 text-xs text-muted-foreground">
+              {demoStatus.data.accounts.map((account) => (
+                <div key={account.email} className="flex items-center justify-between gap-3">
+                  <span className="font-medium text-foreground">{account.email}</span>
+                  <span className="font-mono uppercase tracking-wider">{account.role}</span>
+                </div>
+              ))}
+              <div className="flex items-center justify-between gap-3 border-t border-border pt-2">
+                <span>Password</span>
+                <span className="font-mono text-foreground">{demoStatus.data.password}</span>
+              </div>
+            </div>
+            <Button type="button" className="mt-4 w-full" onClick={setupDemoAccounts} disabled={setupLoading}>
+              {setupLoading ? "Creating accounts…" : "Create demo accounts"}
+            </Button>
+          </div>
+        )}
 
         <Tabs value={mode} onValueChange={(v) => setMode(v as any)}>
           <TabsList className="grid w-full grid-cols-2">
