@@ -1,3 +1,4 @@
+import { useState, useMemo } from "react";
 import { createFileRoute, getRouteApi } from "@tanstack/react-router";
 import { KpiTile, Panel } from "@/components/dashboard/KpiTile";
 import {
@@ -20,6 +21,8 @@ import {
   ReferenceLine,
 } from "recharts";
 import { cn } from "@/lib/utils";
+import { Input } from "@/components/ui/input";
+import { Search, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 
 function median(nums: number[]): number {
   if (!nums.length) return 0;
