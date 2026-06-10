@@ -1,167 +1,214 @@
 # MISE.OPS
 
-A restaurant operations intelligence dashboard built for independent operators, chefs, and general managers who need to see their business clearly — from the dining room floor to the back-office P&L.
+A restaurant operations intelligence dashboard for independent operators, chefs, and general managers who need to see their business clearly — from the dining room floor to the back-office P&L.
 
-## Overview
+---
 
-MISE.OPS surfaces the metrics that matter across four operational lenses:
+## Hypothesis
 
-| Section | Purpose |
-|---------|---------|
-| **The Floor** | Daily pulse — covers, net sales, PPA, average check, discount rate, and day×time demand heatmaps. |
-| **The Office** | Weekly P&L — labor %, COGS %, operating profit, and revenue-vs-cost breakdowns. |
-| **The Architect** | Menu engineering — item-level margin analysis, popularity vs. margin scatter plots, and Stars / Plowhorses / Puzzles / Dogs classification. |
-| **The Pipeline** | Events & catering CRM — open pipeline value, win rate, upcoming events, and stage funnel. |
+> **Independent restaurant operators don't lack data — they lack a single, opinionated view of it.**
 
-The app ships with realistic demo data so you can explore every view immediately without connecting a POS or accounting system.
+Most operators stitch their decisions together from a POS report, a spreadsheet from their bookkeeper, a Google Calendar of private events, and gut feel. The hypothesis behind MISE.OPS is that operators will make faster, better decisions if they can see the **four lenses that actually drive a restaurant** — service, profit, menu, and pipeline — in one tool, with consistent filters, period comparisons, and plain-language explanations of every metric.
+
+If that hypothesis is correct, an operator should be able to answer questions like *"Are we losing money on Tuesdays?"*, *"Which menu items deserve a price bump?"*, or *"How healthy is our catering pipeline this quarter?"* in under 30 seconds.
+
+---
+
+## Scenario
+
+The product is positioned around a recurring scenario:
+
+> It's Monday morning. A GM/owner sits down with a coffee before the team arrives. They have 15 minutes to understand what happened last week, decide what to change this week, and confirm that the upcoming catering pipeline is healthy.
+
+Every design decision — the four-tab layout, the persistent date range and revenue-center filters, the period-over-period toggle, the heatmaps, the menu-engineering quadrant — is optimised for **that 15-minute Monday review**.
+
+---
+
+## Key Screens
+
+| Screen | Route | What it answers |
+|---|---|---|
+| **The Floor** | `/floor` | How is service performing? Covers, net sales, PPA, avg check, discount rate, and a day × time demand heatmap. |
+| **The Office** | `/office` | Are we making money? Weekly P&L with labor %, COGS %, operating profit, and revenue-vs-cost breakdowns. |
+| **The Architect** | `/architect` | Which menu items earn their place? Popularity × margin scatter, with Stars / Plowhorses / Puzzles / Dogs classification. |
+| **The Pipeline** | `/pipeline` | What's coming? Events & catering CRM — open pipeline value, win rate, upcoming events, stage funnel. |
+| **Auth** | `/auth` | Email/password + Google sign-in. Redirects authenticated users into the dashboard. |
+
+All four dashboard screens share the same shell: header with live-service indicator, tab navigation with atmospheric backgrounds, and a filter bar (date range, revenue center, compare toggle).
+
+---
+
+## User Flow
+
+```text
+        ┌──────────────┐
+        │   Landing    │  /  → redirects to /floor (or /auth if signed out)
+        └──────┬───────┘
+               │
+        ┌──────▼───────┐
+        │   /auth      │  Email + password, Google OAuth
+        └──────┬───────┘
+               │ on success
+        ┌──────▼─────────────────────────────────────────────┐
+        │              Dashboard Shell                       │
+        │  Header · Tabs · Date range · Center · Compare     │
+        ├────────────┬────────────┬────────────┬─────────────┤
+        │  /floor    │  /office   │ /architect │  /pipeline  │
+        │  Service   │   P&L      │   Menu     │   Events    │
+        └────────────┴────────────┴────────────┴─────────────┘
+```
+
+**Typical session:**
+
+1. User lands on `/` → redirected to `/floor` if authenticated, otherwise `/auth`.
+2. Signs in via Supabase (email or Google).
+3. Lands on **The Floor**, scans yesterday's covers and net sales, checks the heatmap for soft dayparts.
+4. Switches to **The Office** to confirm labor % and COGS % are within target.
+5. Opens **The Architect** to identify a Plowhorse worth a small price test.
+6. Finishes on **The Pipeline** to confirm next week's events are confirmed and follow up on at-risk leads.
+7. Adjusts date range / revenue center / compare-to-prior-period without losing context — all filters are URL-driven, so any view is shareable.
+
+---
+
+## Build Decisions
+
+### Framework — TanStack Start
+Chosen for **file-based routing with typed search params, first-class SSR, and a clean loader/Query integration**. The dashboard relies heavily on URL state (range, center, compare), and TanStack Router's Zod-validated search params make that ergonomic and type-safe.
+
+### URL as state container
+Filters live in the URL via a shared Zod schema (`src/lib/dashboard-search.ts`). This makes every view shareable, bookmarkable, and SSR-friendly — and it matches the "Monday review" scenario where an operator may forward a link to a chef or partner.
+
+### Four routes, one shell
+Rather than a single mega-dashboard, each lens is its own route under the `_authenticated` layout. This keeps each screen focused, code-split, and easy to extend, while the shared `DashboardShell` guarantees identical filter behaviour and visual rhythm across tabs.
+
+### Demo data first
+`src/lib/demo-data.ts` generates deterministic, realistic restaurant metrics keyed off the active range and revenue center. This lets the product be evaluated end-to-end without a POS integration and serves as the contract a real data source must satisfy later.
+
+### Atmospheric backgrounds per tab
+Each tab carries a subtle background image (floor / office / architect / pipeline) to reinforce *where you are* without adding chrome. Contrast is managed through a tuned overlay so KPI tiles remain legible in both themes.
+
+### Design tokens, not hardcoded colors
+All colors, surfaces, and opacities are semantic CSS variables in `src/styles.css`. Components use tokens (`bg-card`, `text-muted-foreground`, etc.), so dark/light mode and future rebrands are a token change, not a sweep.
+
+### Auth via Supabase, gated by a layout route
+The `_authenticated` pathless layout wraps every dashboard route and redirects unauthenticated users to `/auth`. Loaders behind this gate can safely call protected server functions because the session is guaranteed.
+
+### shadcn/ui + Recharts
+shadcn/ui gives accessible Radix primitives we own outright (no version lock-in), and Recharts handles the bar/line/scatter/heatmap variety the four lenses need without pulling in a heavier visualization stack.
+
+### TanStack Query for reads
+Initial reads use `ensureQueryData` in the loader + `useSuspenseQuery` in the component. No `useEffect` + `fetch`, no `isLoading` flicker on first render.
+
+---
 
 ## Tech Stack
 
-- **Framework:** [TanStack Start](https://tanstack.com/start) (full-stack React 19, file-based routing, SSR/SSG)
-- **Build Tool:** Vite 7
+- **Framework:** [TanStack Start](https://tanstack.com/start) (React 19, file-based routing, SSR)
+- **Build:** Vite 7
 - **Styling:** Tailwind CSS v4 with CSS theme variables
-- **Components:** shadcn/ui (Radix UI primitives + `class-variance-authority`)
+- **Components:** shadcn/ui (Radix UI primitives)
 - **Charts:** Recharts
-- **Data Fetching:** TanStack Query
-- **Auth:** Supabase Auth (email/password + Google OAuth)
-- **Backend:** Supabase (PostgreSQL, RLS policies)
-- **Validation:** Zod (search params, forms)
-- **Fonts:** Inter (body), JetBrains Mono (data + labels)
+- **Data:** TanStack Query
+- **Auth & Backend:** Supabase (Postgres + RLS, email + Google OAuth)
+- **Validation:** Zod
+- **Fonts:** Inter (UI), JetBrains Mono (numerics)
+
+---
 
 ## Project Structure
 
 ```text
 src/
-  routes/                    # TanStack file-based routes
-    __root.tsx               # Root layout (shell + providers + meta)
-    index.tsx                # Landing redirect → /floor
-    auth.tsx                 # Auth gate (redirects authenticated users)
-    _authenticated.tsx         # Layout wrapper for protected dashboard views
-    _authenticated.floor.tsx      # The Floor — service analytics
-    _authenticated.office.tsx     # The Office — P&L & costs
-    _authenticated.architect.tsx  # The Architect — menu engineering
-    _authenticated.pipeline.tsx   # The Pipeline — events CRM
+  routes/
+    __root.tsx                    # Root shell, providers, meta
+    index.tsx                     # Redirects to /floor
+    auth.tsx                      # Sign in / sign up
+    _authenticated.tsx            # Auth gate + dashboard layout
+    _authenticated.floor.tsx      # The Floor
+    _authenticated.office.tsx     # The Office
+    _authenticated.architect.tsx  # The Architect
+    _authenticated.pipeline.tsx   # The Pipeline
   components/
     dashboard/
-      DashboardShell.tsx     # Shared shell: header, tabs, filters, backgrounds
-      KpiTile.tsx            # KPI cards + Panel wrappers
-      Heatmap.tsx            # Day×Time demand heatmap
-    ui/                      # shadcn/ui primitives (Button, Tooltip, Select, etc.)
-    theme-provider.tsx       # Dark / light mode context
-    theme-toggle.tsx         # Theme switcher
+      DashboardShell.tsx          # Header, tabs, filter bar, backgrounds
+      KpiTile.tsx                 # KPI card + Panel wrappers
+      Heatmap.tsx                 # Day × time demand heatmap
+    ui/                           # shadcn/ui primitives
+    theme-provider.tsx
+    theme-toggle.tsx
   lib/
-    demo-data.ts             # Synthetic restaurant data generators
-    format.ts                # Currency, number, and date formatting helpers
-    dashboard-search.ts      # Zod schema for URL search params
-  integrations/supabase/     # Supabase client + auth middleware
-  assets/                    # Tab-specific atmospheric background images
-  styles.css                 # Tailwind entry + CSS theme tokens
+    demo-data.ts                  # Synthetic data generators
+    format.ts                     # Currency / number / date helpers
+    dashboard-search.ts           # Zod schema for URL search params
+  integrations/supabase/          # Client + auth middleware
+  assets/                         # Per-tab background images
+  styles.css                      # Tailwind + theme tokens
 ```
+
+---
 
 ## Getting Started
 
 ### Prerequisites
-
 - Node.js 20+ (or Bun)
-- A Supabase project (for auth and optional data persistence)
+- A Supabase project for auth
 
-### Installation
+### Install
 
 ```bash
-# Clone the repository
 git clone <repo-url>
 cd mise-ops
-
-# Install dependencies
-bun install
-# or
-npm install
+bun install   # or: npm install
 ```
 
-### Environment Variables
+### Environment
 
-Create a `.env` file in the project root:
+Create a `.env`:
 
 ```env
 VITE_SUPABASE_URL=https://your-project.supabase.co
 VITE_SUPABASE_ANON_KEY=your-anon-key
 ```
 
-> The Supabase service-role key is server-only and should **never** be exposed in client bundles.
+> Never expose the Supabase service-role key in client bundles.
 
-### Development
+### Develop
 
 ```bash
-bun run dev
+bun run dev    # http://localhost:3000
 ```
-
-The dev server starts at `http://localhost:3000`.
 
 ### Build
 
 ```bash
-bun run build
+bun run build  # SSR-ready production bundle
 ```
 
-Produces an optimized production bundle with SSR.
+---
 
-## Features
+## Connecting Real Data
 
-- **Four operational views** tailored to restaurant workflows
-- **Atmospheric tab backgrounds** that subtly shift based on the active section
-- **Hover tooltips** on every KPI explaining the metric in plain language
-- **Date range presets** (Today, 7D, 30D, 90D, YTD)
-- **Revenue center filtering** (Dining Room, Bar, Patio, Takeout, Delivery, Catering)
-- **Period-over-period comparison** toggle
-- **Dark & light mode** support
-- **Responsive layout** for desktop and tablet
-- **Live service indicator** in the header
+Replace the generators in `src/lib/demo-data.ts` with:
 
-## Authentication
+- **POS APIs** — Square, Toast, Clover for covers / sales / item mix
+- **Accounting** — QuickBooks or Xero for labor and COGS
+- **Direct reads** — Supabase server functions over your own schema
 
-Auth is handled via Supabase. The `_authenticated` layout route guards all dashboard pages:
+Each lens (`/floor`, `/office`, `/architect`, `/pipeline`) reads from a small, well-defined surface — swap the generator for a real fetch and the UI keeps working.
 
-- Unauthenticated users are redirected to `/auth`
-- Authenticated users hitting `/auth` are redirected to `/floor`
+---
 
-Social login (Google) is configured by default.
+## Pushing to GitHub
 
-## Data Model
+This project syncs bidirectionally with GitHub via the Lovable GitHub integration. To connect and push:
 
-Currently the app uses **demo data generators** (`src/lib/demo-data.ts`) to produce realistic restaurant metrics. Each generator is deterministic based on the selected date range and revenue center, so the numbers feel coherent but are not tied to any real business.
+1. In the Lovable editor, open the **+** menu (bottom-left of the chat input) → **GitHub → Connect project**.
+2. Authorize the Lovable GitHub App and pick the account/org for the repo.
+3. Click **Create Repository** — Lovable creates the repo and pushes the current codebase, including this README.
 
-To connect a real data source, replace the demo generators with:
-- **POS API** imports (Square, Toast, Clover, etc.)
-- **Accounting system** integrations (QuickBooks, Xero)
-- **Direct database** reads via Supabase server functions
+After the first push, every change you make in Lovable (this README included) is committed and pushed to GitHub automatically.
 
-## Customization
-
-### Theme Tokens
-
-Colors, surfaces, and opacity values are defined as CSS custom properties in `src/styles.css`. Update the `@theme` block to rebrand:
-
-```css
-@theme {
-  --color-accent: #3b82f6;
-  --color-background: #0f172a;
-  /* ... */
-}
-```
-
-### Background Images
-
-Each tab has its own background image defined in `DashboardShell.tsx`. Swap the imports in:
-
-```tsx
-import bgFloor from "@/assets/bg-floor.jpg";
-import bgOffice from "@/assets/bg-office.jpg";
-/* ... */
-```
-
-### KPI Definitions
-
-Edit tooltips and thresholds directly in each route file (e.g., `src/routes/_authenticated.floor.tsx`).
+---
 
 ## License
 
