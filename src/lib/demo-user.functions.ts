@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 
-export const DEMO_ADMIN_EMAIL = "admin@mise.ops";
-export const DEMO_STAFF_EMAIL = "staff@mise.ops";
+export const DEMO_ADMIN_EMAIL = "admin@miseops.dev";
+export const DEMO_STAFF_EMAIL = "staff@miseops.dev";
 export const DEMO_PASSWORD = "MiseDemo!2026";
 
 const DEMO_USERS = [
