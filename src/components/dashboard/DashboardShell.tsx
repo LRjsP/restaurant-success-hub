@@ -1,5 +1,8 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { getMyRole } from "@/lib/users.functions";
 import { Button } from "@/components/ui/button";
 import { DATE_PRESETS, REVENUE_CENTERS } from "@/lib/format";
 import { type DashboardSearch } from "@/lib/dashboard-search";
@@ -10,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { LogOut } from "lucide-react";
+import { LogOut, Users } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import bgFloor from "@/assets/bg-floor.jpg";
@@ -58,6 +61,9 @@ export function DashboardShell({
 }) {
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const fetchMe = useServerFn(getMyRole);
+  const meQuery = useQuery({ queryKey: ["my-role"], queryFn: () => fetchMe(), staleTime: 60_000 });
+  const isAdmin = meQuery.data?.isAdmin ?? false;
 
   const updateSearch = (patch: Partial<DashboardSearch>) => {
     navigate({ to: pathname, search: (prev: any) => ({ ...prev, ...patch }), replace: true });
@@ -140,6 +146,22 @@ export function DashboardShell({
               </span>
             </div>
             <ThemeToggle />
+            {isAdmin && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Link
+                    to="/users"
+                    search={(prev: any) => prev}
+                    className={`flex h-8 w-8 items-center justify-center rounded-sm border border-border text-muted-foreground transition-colors hover:text-foreground ${
+                      pathname === "/users" ? "bg-accent/10 text-accent border-accent/40" : ""
+                    }`}
+                  >
+                    <Users className="h-3.5 w-3.5" />
+                  </Link>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">User Config</TooltipContent>
+              </Tooltip>
+            )}
             <Button variant="ghost" size="sm" onClick={handleSignOut} className="text-muted-foreground hover:text-foreground">
               <LogOut className="h-3.5 w-3.5" />
             </Button>
