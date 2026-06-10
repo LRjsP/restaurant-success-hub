@@ -61,6 +61,9 @@ export function DashboardShell({
 }) {
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const fetchMe = useServerFn(getMyRole);
+  const meQuery = useQuery({ queryKey: ["my-role"], queryFn: () => fetchMe(), staleTime: 60_000 });
+  const isAdmin = meQuery.data?.isAdmin ?? false;
 
   const updateSearch = (patch: Partial<DashboardSearch>) => {
     navigate({ to: pathname, search: (prev: any) => ({ ...prev, ...patch }), replace: true });
