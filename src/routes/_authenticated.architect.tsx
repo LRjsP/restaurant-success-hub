@@ -53,6 +53,8 @@ function ArchitectPage() {
   const blendedPct = totalRevenue ? (totalMargin / totalRevenue) * 100 : 0;
   const stars = items.filter((i) => i.classification === "Star").length;
   const dogs = items.filter((i) => i.classification === "Dog").length;
+  const medianSold = median(items.map((i) => i.sold));
+  const medianMargin = median(items.map((i) => i.margin));
 
   return (
     <div className="space-y-6">
