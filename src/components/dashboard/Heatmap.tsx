@@ -46,19 +46,30 @@ export function DayTimeHeatmap({
         </p>
         <div className="inline-flex items-center rounded-sm border border-border bg-card p-0.5">
           {(["covers", "netSales"] as const).map((m) => (
-            <button
-              key={m}
-              type="button"
-              onClick={() => setMetric(m)}
-              className={cn(
-                "px-2.5 py-1 font-mono text-[10px] uppercase tracking-wider transition-colors",
-                metric === m
-                  ? "bg-accent text-accent-foreground"
-                  : "text-muted-foreground hover:text-foreground",
-              )}
-            >
-              {m === "covers" ? "Covers" : "Sales"}
-            </button>
+            <Tooltip key={m} delayDuration={150}>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  onClick={() => setMetric(m)}
+                  className={cn(
+                    "px-2.5 py-1 font-mono text-[10px] uppercase tracking-wider transition-colors",
+                    metric === m
+                      ? "bg-accent text-accent-foreground"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  {m === "covers" ? "Covers" : "Sales"}
+                </button>
+              </TooltipTrigger>
+              <TooltipContent
+                side="top"
+                className="rounded-md border border-border bg-popover px-2.5 py-1.5 text-[11px] text-popover-foreground shadow-md"
+              >
+                {m === "covers"
+                  ? "Guest count — how many diners were served per day and hour slot."
+                  : "Net sales — revenue generated per day and hour slot."}
+              </TooltipContent>
+            </Tooltip>
           ))}
         </div>
       </div>
