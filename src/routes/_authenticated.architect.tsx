@@ -17,8 +17,16 @@ import {
   ResponsiveContainer,
   ZAxis,
   Cell,
+  ReferenceLine,
 } from "recharts";
 import { cn } from "@/lib/utils";
+
+function median(nums: number[]): number {
+  if (!nums.length) return 0;
+  const s = [...nums].sort((a, b) => a - b);
+  const m = Math.floor(s.length / 2);
+  return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
+}
 
 const layoutApi = getRouteApi("/_authenticated");
 
@@ -45,6 +53,8 @@ function ArchitectPage() {
   const blendedPct = totalRevenue ? (totalMargin / totalRevenue) * 100 : 0;
   const stars = items.filter((i) => i.classification === "Star").length;
   const dogs = items.filter((i) => i.classification === "Dog").length;
+  const medianSold = median(items.map((i) => i.sold));
+  const medianMargin = median(items.map((i) => i.margin));
 
   return (
     <div className="space-y-6">
@@ -79,36 +89,65 @@ function ArchitectPage() {
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
-        <Panel title="Menu Engineering Matrix" subtitle="Popularity vs Margin %" className="lg:col-span-3">
-          <div className="h-80 w-full">
+        <Panel title="Menu Engineering Matrix" subtitle="Volume Sold vs Margin ($)" className="lg:col-span-3">
+          <div className="relative h-80 w-full">
+            {/* Quadrant background labels */}
+            <div className="pointer-events-none absolute inset-0 z-0">
+              <span className="absolute left-[8%] top-[8%] font-mono text-[11px] uppercase tracking-widest text-muted-foreground/25">
+                Puzzles
+              </span>
+              <span className="absolute right-[6%] top-[8%] font-mono text-[11px] uppercase tracking-widest text-muted-foreground/25">
+                Stars
+              </span>
+              <span className="absolute left-[8%] bottom-[14%] font-mono text-[11px] uppercase tracking-widest text-muted-foreground/25">
+                Dogs
+              </span>
+              <span className="absolute right-[6%] bottom-[14%] font-mono text-[11px] uppercase tracking-widest text-muted-foreground/25">
+                Plowhorses
+              </span>
+            </div>
             <ResponsiveContainer width="100%" height="100%">
               <ScatterChart margin={{ top: 16, right: 16, bottom: 16, left: 8 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
                 <XAxis
                   type="number"
                   dataKey="sold"
-                  name="Units sold"
+                  name="Volume Sold"
                   tick={{ fill: "var(--color-muted-foreground)", fontSize: 10, fontFamily: "JetBrains Mono, monospace" }}
                   axisLine={false}
                   tickLine={false}
-                  label={{ value: "Popularity (units)", position: "insideBottom", offset: -8, fontSize: 10, fill: "var(--color-muted-foreground)" }}
+                  label={{ value: "Volume Sold (units)", position: "insideBottom", offset: -8, fontSize: 10, fill: "var(--color-muted-foreground)" }}
                 />
                 <YAxis
                   type="number"
-                  dataKey="marginPct"
-                  name="Margin %"
+                  dataKey="margin"
+                  name="Margin ($)"
                   tick={{ fill: "var(--color-muted-foreground)", fontSize: 10, fontFamily: "JetBrains Mono, monospace" }}
                   axisLine={false}
                   tickLine={false}
-                  tickFormatter={(v: number) => `${v.toFixed(0)}%`}
+                  tickFormatter={(v: number) =>
+                    v >= 1000 ? `$${(v / 1000).toFixed(1)}k` : `$${v.toFixed(0)}`
+                  }
                 />
                 <ZAxis type="number" dataKey="revenue" range={[60, 400]} />
+                <ReferenceLine
+                  y={medianMargin}
+                  stroke="var(--color-border)"
+                  strokeDasharray="4 4"
+                  ifOverflow="extendDomain"
+                />
+                <ReferenceLine
+                  x={medianSold}
+                  stroke="var(--color-border)"
+                  strokeDasharray="4 4"
+                  ifOverflow="extendDomain"
+                />
                 <Tooltip
                   cursor={{ strokeDasharray: "3 3" }}
                   contentStyle={{ backgroundColor: "var(--color-card)", border: "1px solid var(--color-border)", borderRadius: "6px", fontSize: "11px", fontFamily: "JetBrains Mono, monospace", color: "var(--color-foreground)" }}
                   formatter={(value: any, name: string) => {
-                    if (name === "Margin %") return [`${Number(value).toFixed(1)}%`, name];
-                    if (name === "Units sold") return [fmtNumber(value), name];
+                    if (name === "Margin ($)") return [fmtCurrency(Number(value)), name];
+                    if (name === "Volume Sold") return [fmtNumber(value), name];
                     return [fmtCurrency(value), name];
                   }}
                   labelFormatter={(_, payload: any) => payload?.[0]?.payload?.name ?? ""}

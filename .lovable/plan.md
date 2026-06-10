@@ -1,40 +1,56 @@
-# Plan: KPI Tooltips + Day × Time Heatmap
+# Plan — Refine the Menu Engineering Matrix
 
-## 1. KPI info tooltips (all tabs)
+Scope is strictly limited to the scatter chart block inside
+`src/routes/_authenticated.architect.tsx`. No other files are touched
+(per the CRITICAL RULE: `dashboard-search.ts`, `_authenticated.tsx`, and
+global routing remain untouched).
 
-Extend `KpiTile` (`src/components/dashboard/KpiTile.tsx`) with an optional `tooltip?: string` prop. When set, render a small `Info` icon (lucide, 12px, muted) next to the label, wrapped in shadcn `Tooltip` for an aesthetic, properly-sized hover popover (max-w ~260px, mono caption, subtle border).
+## Audit summary
 
-Pass clear, plain-language descriptions on every KPI tile across:
-- `_authenticated.floor.tsx` — Net Sales, Covers, PPA, Avg Check, Discount %
-- `_authenticated.office.tsx` — Net Revenue, Labor %, COGS %, Operating Profit, Margin
-- `_authenticated.architect.tsx` — Menu KPIs (Stars, Avg Margin, etc.)
-- `_authenticated.pipeline.tsx` — Pipeline KPIs (Forecasted Revenue, Confirmed, Conversion, etc.)
+- X-axis already represents Volume Sold (`dataKey="sold"`) — keep, relabel to "Volume Sold".
+- Y-axis currently plots `marginPct` formatted as `%` — change to absolute Margin ($) using `dataKey="margin"`.
+- No `ReferenceLine`s exist — add two (median X, median Y) to form four quadrants.
+- No background quadrant labels — add absolute-positioned, low-opacity "Stars / Plowhorses / Puzzles / Dogs" text inside the chart container.
 
-Example copy: *"Per Person Average — total net sales divided by covers. Measures how much each guest spends on average."*
+## Changes (single file: `src/routes/_authenticated.architect.tsx`)
 
-Ensure `TooltipProvider` is mounted (add at `__root.tsx` if not already).
+1. **Import additions** (from `recharts`): add `ReferenceLine`.
+2. **Compute medians** just above the JSX:
+   - `medianSold` = median of `items.map(i => i.sold)`
+   - `medianMargin` = median of `items.map(i => i.margin)`
+   (Median, not mean — robust to outliers and matches classic menu-engineering convention.)
+3. **Y-axis swap**:
+   - `dataKey="margin"`, `name="Margin ($)"`
+   - `tickFormatter` → `fmtCurrency` (compact, e.g. `$1.2k`)
+   - Axis label "Margin ($)" on the left.
+4. **Add two `ReferenceLine`s**:
+   - Horizontal at `y={medianMargin}`, stroke `var(--color-border)`, `strokeDasharray="4 4"`.
+   - Vertical at `x={medianSold}`, same styling.
+5. **Quadrant background labels** (absolute-positioned inside the chart's relative wrapper, behind the `ResponsiveContainer` via `z-0` / `pointer-events-none`):
+   - Top-left: **Puzzles** (low volume, high margin)
+   - Top-right: **Stars** (high volume, high margin)
+   - Bottom-left: **Dogs** (low volume, low margin)
+   - Bottom-right: **Plowhorses** (high volume, low margin)
+   - Styling: `font-mono uppercase tracking-widest text-[11px] text-muted-foreground/30` (very low opacity so points read clearly).
+6. **Tooltip formatter**: update the Margin branch to format with `fmtCurrency` and label "Margin ($)". Keep "Units sold" and revenue branches as-is.
+7. **Legend row**: keep the existing Star/Plowhorse/Puzzle/Dog color chips below the chart — they now reinforce the quadrant overlay.
 
-## 2. Day × Time heatmap component
+## What stays the same
 
-New file: `src/components/dashboard/Heatmap.tsx`
-- 7 rows (Sun–Sat) × 14 columns (11am–12am hourly slots).
-- Cells colored with `--color-chart-1` opacity scale (0.05 → 0.95) based on value.
-- Header shows metric toggle (Covers / Net Sales) using shadcn `Tabs` or segmented buttons.
-- Cell hover: small tooltip with day, time, exact value.
-- Panel header includes the same info-icon tooltip: *"Operational heatmap — identifies your busiest day-parts so you can staff and prep accordingly."*
+- Point coloring by `classification` via `CLASS_COLOR`.
+- Bubble sizing via `ZAxis` on `revenue`.
+- "Top Performers" side panel.
+- KPI tiles above the chart.
+- Chart grid color (`var(--color-border)`), transparent background, font tokens.
 
-## 3. Demo data for heatmap
+## Out of scope (per CRITICAL RULE)
 
-Add `generateHeatmap(center, days)` in `src/lib/demo-data.ts`. Deterministic seed per (day-of-week, hour, center). Returns `{ day, hour, covers, netSales }[]`. Respects current `center` filter; uses a realistic day-part curve (lunch bump 12–2pm, dinner peak 6–9pm, weekend amplification).
+- No changes to `_authenticated.tsx`, `dashboard-search.ts`, routing, auth flow, `PendingComponent`s, empty/error states, or other route files.
+- No edits to `demo-data.ts` — `MenuItem.margin` already exists, so the Y-axis swap is a pure read change.
 
-## 4. Placement
+## Verification after build
 
-- **Floor tab**: full-width Panel below the Daily Trend / Alerts row.
-- **Office tab**: full-width Panel after the P&L summary, framed as "Labor Demand by Day-Part" to tie into staffing/cost analysis.
-
-## Technical notes
-
-- No backend or schema changes — all client-side, theme-token driven (light + dark safe).
-- Reuses existing `Panel` wrapper and design tokens; no hardcoded colors.
-- Tooltip uses shadcn `@/components/ui/tooltip` (already installed).
-- Heatmap is pure CSS grid — no extra chart library.
+- Chart renders 4 visually distinct quadrants split by dashed median lines.
+- Background labels are present but recede behind data points.
+- Hover tooltip shows "Margin ($)" formatted as currency.
+- No regressions in light/dark mode (only token-based colors used).
