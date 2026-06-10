@@ -59,6 +59,10 @@ function ArchitectPage() {
   const medianSold = median(items.map((i) => i.sold));
   const medianMargin = median(items.map((i) => i.margin));
 
+  const [query, setQuery] = useState("");
+  const [sortKey, setSortKey] = useState<"name" | "sold" | "margin" | "marginPct" | "revenue">("margin");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
