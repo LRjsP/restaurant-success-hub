@@ -17,8 +17,16 @@ import {
   ResponsiveContainer,
   ZAxis,
   Cell,
+  ReferenceLine,
 } from "recharts";
 import { cn } from "@/lib/utils";
+
+function median(nums: number[]): number {
+  if (!nums.length) return 0;
+  const s = [...nums].sort((a, b) => a - b);
+  const m = Math.floor(s.length / 2);
+  return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
+}
 
 const layoutApi = getRouteApi("/_authenticated");
 
