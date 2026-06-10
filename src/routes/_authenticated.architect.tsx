@@ -225,8 +225,8 @@ function ArchitectPage() {
           </div>
 
           {/* Grouped menu item table */}
-          <div className="mt-4 space-y-4">
-            {(["Star", "Plowhorse", "Puzzle", "Dog"] as const).map((cls) => {
+          {(() => {
+            const groups = (["Star", "Plowhorse", "Puzzle", "Dog"] as const).map((cls) => {
               const group = items
                 .filter((i) => i.classification === cls)
                 .filter((i) => i.name.toLowerCase().includes(query.toLowerCase()))
@@ -239,70 +239,92 @@ function ArchitectPage() {
                   if (sortKey === "revenue") return dir * (a.revenue - b.revenue);
                   return 0;
                 });
-              if (!group.length) return null;
+              return { cls, group };
+            });
+            const totalFiltered = groups.reduce((sum, g) => sum + g.group.length, 0);
+            if (totalFiltered === 0) {
               return (
-                <div key={cls}>
-                  <div className="mb-2 flex items-center gap-2">
-                    <span className="h-2 w-2 rounded-full" style={{ backgroundColor: CLASS_COLOR[cls] }} />
-                    <h4 className="font-mono text-[11px] font-semibold uppercase tracking-wider text-foreground">
-                      {cls}s
-                    </h4>
-                    <span className="font-mono text-[10px] text-muted-foreground">
-                      {group.length} item{group.length > 1 ? "s" : ""}
-                    </span>
-                  </div>
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left">
-                      <thead>
-                        <tr className="border-b border-border">
-                          <th className="pb-1.5 pr-4 font-mono text-[10px] font-normal uppercase tracking-wider text-muted-foreground">
-                            Item
-                          </th>
-                          <th className="pb-1.5 pr-4 font-mono text-[10px] font-normal uppercase tracking-wider text-muted-foreground">
-                            Category
-                          </th>
-                          <th className="pb-1.5 pr-4 font-mono text-[10px] font-normal uppercase tracking-wider text-muted-foreground text-right">
-                            Sold
-                          </th>
-                          <th className="pb-1.5 pr-4 font-mono text-[10px] font-normal uppercase tracking-wider text-muted-foreground text-right">
-                            Margin %
-                          </th>
-                          <th className="pb-1.5 pr-4 font-mono text-[10px] font-normal uppercase tracking-wider text-muted-foreground text-right">
-                            Margin
-                          </th>
-                          <th className="pb-1.5 font-mono text-[10px] font-normal uppercase tracking-wider text-muted-foreground text-right">
-                            Revenue
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-border/50">
-                        {group.map((i) => (
-                          <tr key={i.name}>
-                            <td className="py-1.5 pr-4 text-sm text-foreground">{i.name}</td>
-                            <td className="py-1.5 pr-4 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
-                              {i.category}
-                            </td>
-                            <td className="py-1.5 pr-4 text-right font-mono text-sm tabular-nums text-foreground">
-                              {fmtNumber(i.sold)}
-                            </td>
-                            <td className="py-1.5 pr-4 text-right font-mono text-sm tabular-nums text-foreground">
-                              {i.marginPct.toFixed(1)}%
-                            </td>
-                            <td className="py-1.5 pr-4 text-right font-mono text-sm tabular-nums text-foreground">
-                              {fmtCurrency(i.margin)}
-                            </td>
-                            <td className="py-1.5 text-right font-mono text-sm tabular-nums text-foreground">
-                              {fmtCurrency(i.revenue)}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                <div className="mt-4 flex flex-col items-center justify-center py-12 text-center">
+                  <Search className="mb-3 h-8 w-8 text-muted-foreground/40" />
+                  <p className="font-mono text-sm text-muted-foreground">No items found</p>
+                  <p className="mt-1 font-mono text-[10px] text-muted-foreground/60">Try adjusting your search</p>
                 </div>
               );
-            })}
-          </div>
+            }
+            return (
+              <div className="mt-4 space-y-4">
+                {groups.map(({ cls, group }) => (
+                  <div key={cls}>
+                    <div className="mb-2 flex items-center gap-2">
+                      <span className="h-2 w-2 rounded-full" style={{ backgroundColor: CLASS_COLOR[cls] }} />
+                      <h4 className="font-mono text-[11px] font-semibold uppercase tracking-wider text-foreground">
+                        {cls}s
+                      </h4>
+                      <span className="font-mono text-[10px] text-muted-foreground">
+                        {group.length} item{group.length !== 1 ? "s" : ""}
+                      </span>
+                    </div>
+                    <div className="overflow-x-auto">
+                      <table className="w-full table-fixed text-left">
+                        <thead>
+                          <tr className="border-b border-border">
+                            <th className="w-[32%] pb-1.5 pr-4 font-mono text-[10px] font-normal uppercase tracking-wider text-muted-foreground">
+                              Item
+                            </th>
+                            <th className="w-[14%] pb-1.5 pr-4 font-mono text-[10px] font-normal uppercase tracking-wider text-muted-foreground">
+                              Category
+                            </th>
+                            <th className="w-[12%] pb-1.5 pr-4 font-mono text-[10px] font-normal uppercase tracking-wider text-muted-foreground text-right">
+                              Sold
+                            </th>
+                            <th className="w-[14%] pb-1.5 pr-4 font-mono text-[10px] font-normal uppercase tracking-wider text-muted-foreground text-right">
+                              Margin %
+                            </th>
+                            <th className="w-[14%] pb-1.5 pr-4 font-mono text-[10px] font-normal uppercase tracking-wider text-muted-foreground text-right">
+                              Margin
+                            </th>
+                            <th className="w-[14%] pb-1.5 font-mono text-[10px] font-normal uppercase tracking-wider text-muted-foreground text-right">
+                              Revenue
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-border/50">
+                          {group.length > 0 ? (
+                            group.map((i) => (
+                              <tr key={i.name}>
+                                <td className="py-1.5 pr-4 text-sm text-foreground">{i.name}</td>
+                                <td className="py-1.5 pr-4 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+                                  {i.category}
+                                </td>
+                                <td className="py-1.5 pr-4 text-right font-mono text-sm tabular-nums text-foreground">
+                                  {fmtNumber(i.sold)}
+                                </td>
+                                <td className="py-1.5 pr-4 text-right font-mono text-sm tabular-nums text-foreground">
+                                  {i.marginPct.toFixed(1)}%
+                                </td>
+                                <td className="py-1.5 pr-4 text-right font-mono text-sm tabular-nums text-foreground">
+                                  {fmtCurrency(i.margin)}
+                                </td>
+                                <td className="py-1.5 text-right font-mono text-sm tabular-nums text-foreground">
+                                  {fmtCurrency(i.revenue)}
+                                </td>
+                              </tr>
+                            ))
+                          ) : (
+                            <tr>
+                              <td colSpan={6} className="py-4 text-center font-mono text-[11px] text-muted-foreground/60">
+                                No matching items
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
         </Panel>
 
         <Panel title="Top Performers" subtitle="By contribution margin" className="lg:col-span-2">
