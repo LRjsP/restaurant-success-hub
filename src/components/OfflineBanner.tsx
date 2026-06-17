@@ -4,9 +4,9 @@ import { useRouter } from "@tanstack/react-router";
 import { WifiOff, RefreshCw } from "lucide-react";
 
 export function OfflineBanner() {
-  const [online, setOnline] = useState(
-    typeof navigator === "undefined" ? true : navigator.onLine,
-  );
+  // Default to true to avoid hydration mismatch and false positives in preview/iframe environments.
+  // Only switch to offline when the browser actually fires the "offline" event.
+  const [online, setOnline] = useState(true);
   const router = useRouter();
   const queryClient = useQueryClient();
 
