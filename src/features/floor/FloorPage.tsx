@@ -11,12 +11,33 @@ import { useFloorData } from "./data";
 import { OnboardingHint } from "./OnboardingHint";
 import { SalesTrendChart } from "./SalesTrendChart";
 import { AlertsList } from "./AlertsPanel";
+import { KpiRowSkeleton, ChartSkeleton, HeatmapSkeleton } from "@/components/dashboard/Skeletons";
+import { Panel as PanelShell } from "@/components/dashboard/KpiTile";
 
 const layoutApi = getRouteApi("/_authenticated");
 
 export function FloorPage() {
   const search = layoutApi.useSearch();
-  const { kpis, alerts } = useFloorData(search);
+  const { kpis, alerts, isLoading } = useFloorData(search);
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <KpiRowSkeleton count={5} />
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+          <PanelShell title="Daily Trend" subtitle="Net sales by day" className="lg:col-span-2">
+            <ChartSkeleton />
+          </PanelShell>
+          <PanelShell title="Live Alerts" subtitle="Requires attention">
+            <ChartSkeleton height="h-48" />
+          </PanelShell>
+        </div>
+        <PanelShell title="Day × Time Heatmap" subtitle="When the operation gets busy">
+          <HeatmapSkeleton />
+        </PanelShell>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
