@@ -1,14 +1,16 @@
 /**
- * The Pipeline feature — data layer.
- * Computes pipeline rollups (totals, win rate, by-stage funnel, upcoming list).
+ * The Pipeline feature — data layer (live).
  */
-import { useMemo } from "react";
-import { generatePipeline, daysForPreset, type PipelineEvent } from "@/lib/demo-data";
+import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { getPipelineData } from "@/lib/dashboard.functions";
+import { getDateRange } from "@/lib/format";
 import type { DashboardSearch } from "@/lib/dashboard-search";
+import type { PipelineEvent, PipelineStage } from "@/lib/dashboard-types";
 
-export const STAGES: PipelineEvent["stage"][] = ["Inquiry", "Proposal", "Confirmed", "Deposit Paid", "Lost"];
+export const STAGES: PipelineStage[] = ["Inquiry", "Proposal", "Confirmed", "Deposit Paid", "Lost"];
 
-export const STAGE_COLOR: Record<PipelineEvent["stage"], string> = {
+export const STAGE_COLOR: Record<PipelineStage, string> = {
   Inquiry: "var(--color-muted-foreground)",
   Proposal: "var(--color-chart-3)",
   Confirmed: "var(--color-chart-1)",
@@ -16,38 +18,25 @@ export const STAGE_COLOR: Record<PipelineEvent["stage"], string> = {
   Lost: "var(--color-destructive)",
 };
 
+const EMPTY = {
+  events: [] as PipelineEvent[],
+  span: 7,
+  totalPipeline: 0,
+  confirmedValue: 0,
+  winRate: 0,
+  upcomingGuests: 0,
+  byStage: STAGES.map((stage) => ({ stage, count: 0, value: 0 })),
+  maxStageValue: 1,
+  upcoming: [] as PipelineEvent[],
+  activeCount: 0,
+};
+
 export function usePipelineData(search: DashboardSearch) {
-  return useMemo(() => {
-    const events = generatePipeline(search.range);
-    const span = daysForPreset(search.range);
-
-    const today = new Date();
-    today.setUTCHours(0, 0, 0, 0);
-    const horizonEnd = new Date(today);
-    horizonEnd.setUTCDate(horizonEnd.getUTCDate() + span);
-
-    const inHorizon = events.filter((e) => new Date(e.date) >= today && new Date(e.date) <= horizonEnd);
-    const totalPipeline = events.filter((e) => e.stage !== "Lost").reduce((a, e) => a + e.value, 0);
-    const confirmedValue = events
-      .filter((e) => e.stage === "Confirmed" || e.stage === "Deposit Paid")
-      .reduce((a, e) => a + e.value, 0);
-    const winRate = events.length ? (events.filter((e) => e.stage === "Deposit Paid").length / events.length) * 100 : 0;
-    const upcomingGuests = inHorizon.reduce((a, e) => a + e.guests, 0);
-
-    const byStage = STAGES.map((s) => ({
-      stage: s,
-      count: events.filter((e) => e.stage === s).length,
-      value: events.filter((e) => e.stage === s).reduce((a, e) => a + e.value, 0),
-    }));
-    const maxStageValue = Math.max(...byStage.map((s) => s.value), 1);
-
-    const upcoming = events
-      .filter((e) => e.stage !== "Lost")
-      .sort((a, b) => a.date.localeCompare(b.date))
-      .slice(0, 8);
-
-    const activeCount = events.filter((e) => e.stage !== "Lost").length;
-
-    return { events, span, totalPipeline, confirmedValue, winRate, upcomingGuests, byStage, maxStageValue, upcoming, activeCount };
-  }, [search.range]);
+  const fn = useServerFn(getPipelineData);
+  const range = getDateRange(search.range);
+  const query = useQuery({
+    queryKey: ["pipeline", range, search.center],
+    queryFn: () => fn({ data: { ...range, center: search.center } }),
+  });
+  return { ...(query.data ?? EMPTY), isLoading: query.isPending, error: query.error };
 }

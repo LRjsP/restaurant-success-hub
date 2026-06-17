@@ -1,7 +1,7 @@
 /**
  * Shared display types for the dashboard feature pages.
- * Server functions in src/lib/kpis.functions.ts return raw DB rows; the
- * feature data hooks map them into these UI-friendly shapes.
+ * Server functions in src/lib/dashboard.functions.ts return data already
+ * shaped to these interfaces.
  */
 
 export type MenuItemClassification = "Star" | "Plowhorse" | "Puzzle" | "Dog";
@@ -28,7 +28,7 @@ export type PipelineStage =
 export interface PipelineEvent {
   id: string;
   client: string;
-  type: "Private Dining" | "Wedding" | "Corporate" | "Tasting";
+  type: string;
   date: string;
   guests: number;
   value: number;
@@ -39,7 +39,7 @@ export const HEATMAP_HOURS = [11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23
 export const HEATMAP_DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 export interface HeatmapCell {
-  day: number; // 0..6 (Sun..Sat)
+  day: number;
   hour: number;
   covers: number;
   netSales: number;
