@@ -1,10 +1,22 @@
 import { Info } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { getRouteApi } from "@tanstack/react-router";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+
+const layoutApi = getRouteApi("/_authenticated");
+
+function useCompareEnabled() {
+  try {
+    const s = layoutApi.useSearch() as { compare?: boolean };
+    return s?.compare ?? true;
+  } catch {
+    return true;
+  }
+}
 
 interface KpiTileProps {
   label: string;
