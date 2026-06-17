@@ -65,19 +65,19 @@ export function KpiTile({ label, value, delta, deltaLabel, hint, variant = "defa
             </Tooltip>
           )}
         </div>
-        {delta !== undefined && (
+        {showDelta && (
           <span className={cn("font-mono text-[10px] tabular-nums", deltaColor)}>
-            {delta > 0 ? "+" : ""}{delta.toFixed(1)}%
+            {delta! > 0 ? "+" : ""}{delta!.toFixed(1)}%
           </span>
         )}
       </div>
       <div className={cn("font-mono font-bold tabular-nums tracking-tight text-foreground", large ? "text-4xl" : "text-3xl")}>
         {value}
       </div>
-      {(hint || deltaLabel) && (
+      {(hint || (showDelta && deltaLabel)) && (
         <div className="mt-3 flex items-center justify-between text-[10px] font-mono uppercase tracking-wide text-muted-foreground">
           <span>{hint}</span>
-          <span>{deltaLabel}</span>
+          <span>{showDelta ? deltaLabel : ""}</span>
         </div>
       )}
     </div>
