@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
 import { fmtCurrency } from "@/lib/format";
-import type { PipelineEvent } from "@/lib/demo-data";
+import type { PipelineEvent } from "@/lib/dashboard-types";
 import { STAGE_COLOR } from "./data";
 
 export function UpcomingEventsTable({ events }: { events: PipelineEvent[] }) {

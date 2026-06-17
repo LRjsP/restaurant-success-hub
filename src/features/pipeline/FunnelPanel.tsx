@@ -1,5 +1,5 @@
 import { fmtCurrency } from "@/lib/format";
-import type { PipelineEvent } from "@/lib/demo-data";
+import type { PipelineEvent } from "@/lib/dashboard-types";
 import { STAGE_COLOR } from "./data";
 
 type StageRow = { stage: PipelineEvent["stage"]; count: number; value: number };

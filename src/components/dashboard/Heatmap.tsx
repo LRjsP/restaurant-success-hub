@@ -1,15 +1,15 @@
 import { useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import {
-  generateHeatmap,
-  HEATMAP_DAYS,
-  HEATMAP_HOURS,
-} from "@/lib/demo-data";
-import { fmtCurrency, fmtNumber } from "@/lib/format";
+import { getHeatmapData } from "@/lib/dashboard.functions";
+import { getRouteApi } from "@tanstack/react-router";
+import { getDateRange, fmtCurrency, fmtNumber } from "@/lib/format";
+import { HEATMAP_DAYS, HEATMAP_HOURS, type HeatmapCell } from "@/lib/dashboard-types";
 import { cn } from "@/lib/utils";
 
 type Metric = "covers" | "netSales";
@@ -21,6 +21,8 @@ function formatHour(h: number) {
   return `${h - 12}p`;
 }
 
+const layoutApi = getRouteApi("/_authenticated");
+
 export function DayTimeHeatmap({
   center,
   defaultMetric = "covers",
@@ -29,13 +31,20 @@ export function DayTimeHeatmap({
   defaultMetric?: Metric;
 }) {
   const [metric, setMetric] = useState<Metric>(defaultMetric);
-  const cells = useMemo(() => generateHeatmap(center), [center]);
+  const search = layoutApi.useSearch();
+  const fn = useServerFn(getHeatmapData);
+  const range = getDateRange(search.range);
+  const { data } = useQuery({
+    queryKey: ["heatmap", range, center],
+    queryFn: () => fn({ data: { from: range.from, to: range.to, center } }),
+  });
+  const cells = (data ?? []) as HeatmapCell[];
   const max = useMemo(
     () => Math.max(1, ...cells.map((c) => (metric === "covers" ? c.covers : c.netSales))),
     [cells, metric],
   );
 
-  const grid: Record<string, (typeof cells)[number]> = {};
+  const grid: Record<string, HeatmapCell> = {};
   for (const c of cells) grid[`${c.day}-${c.hour}`] = c;
 
   return (
@@ -81,7 +90,6 @@ export function DayTimeHeatmap({
             gridTemplateColumns: `36px repeat(${HEATMAP_HOURS.length}, minmax(28px, 1fr))`,
           }}
         >
-          {/* header row */}
           <div />
           {HEATMAP_HOURS.map((h) => (
             <div
@@ -92,14 +100,12 @@ export function DayTimeHeatmap({
             </div>
           ))}
 
-          {/* rows */}
           {HEATMAP_DAYS.map((dLabel, day) => (
             <FragmentRow key={day} dLabel={dLabel}>
               {HEATMAP_HOURS.map((hour) => {
-                const cell = grid[`${day}-${hour}`];
+                const cell = grid[`${day}-${hour}`] ?? { day, hour, covers: 0, netSales: 0 };
                 const value = metric === "covers" ? cell.covers : cell.netSales;
                 const intensity = value / max;
-                // Map intensity into 0.06..0.95 alpha for visual punch
                 const alpha = value === 0 ? 0.04 : 0.08 + intensity * 0.87;
                 return (
                   <Tooltip key={`${day}-${hour}`} delayDuration={80}>
@@ -132,7 +138,6 @@ export function DayTimeHeatmap({
         </div>
       </div>
 
-      {/* legend */}
       <div className="mt-4 flex items-center justify-end gap-2">
         <span className="font-mono text-[9px] uppercase tracking-wider text-muted-foreground">Low</span>
         <div className="flex h-2 w-32 overflow-hidden rounded-sm">

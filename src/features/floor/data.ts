@@ -1,24 +1,30 @@
 /**
- * Floor feature — data layer.
- * Pure data hook (no JSX). Builds period + previous-period KPIs and alerts
- * from the deterministic demo generator. Swap the body to call a real API
- * later without touching the display components.
+ * Floor feature — data layer (live).
+ * Wraps the getFloorData server function and returns a stable shape so the
+ * presentational components render zero-state while data loads.
  */
-import { useMemo } from "react";
-import {
-  generateDemoDays,
-  computeFloorKpis,
-  demoAlerts,
-  daysForPreset,
-} from "@/lib/demo-data";
+import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { getFloorData } from "@/lib/dashboard.functions";
+import { getDateRange } from "@/lib/format";
 import type { DashboardSearch } from "@/lib/dashboard-search";
 
+const EMPTY = {
+  kpis: {
+    netSales: 0, netSalesDelta: 0, covers: 0, coversDelta: 0,
+    ppa: 0, ppaDelta: 0, avgCheck: 0, avgCheckDelta: 0,
+    discountPct: 0, discountPctDelta: 0, noShowRate: 0,
+    trend: [] as { date: string; value: number; covers: number }[],
+  },
+  alerts: [] as { severity: "danger" | "warning" | "info"; message: string; time: string }[],
+};
+
 export function useFloorData(search: DashboardSearch) {
-  return useMemo(() => {
-    const span = daysForPreset(search.range);
-    const days = generateDemoDays(span, search.center);
-    const prev = generateDemoDays(span, search.center, span);
-    const kpis = computeFloorKpis(days, prev);
-    return { kpis, alerts: demoAlerts, span };
-  }, [search.range, search.center]);
+  const fn = useServerFn(getFloorData);
+  const range = getDateRange(search.range);
+  const query = useQuery({
+    queryKey: ["floor", range, search.center],
+    queryFn: () => fn({ data: { ...range, center: search.center } }),
+  });
+  return { ...(query.data ?? EMPTY), isLoading: query.isPending, error: query.error };
 }

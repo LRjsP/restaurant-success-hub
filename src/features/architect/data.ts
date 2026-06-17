@@ -1,27 +1,30 @@
 /**
- * The Architect feature — data layer.
- * Aggregates the menu engineering matrix and rollup stats from demo data.
+ * The Architect feature — data layer (live).
  */
-import { useMemo } from "react";
-import { generateDemoDays, computeMenuMatrix, daysForPreset } from "@/lib/demo-data";
+import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { getArchitectData } from "@/lib/dashboard.functions";
+import { getDateRange } from "@/lib/format";
 import type { DashboardSearch } from "@/lib/dashboard-search";
-import { median } from "./utils";
+import type { MenuItem } from "@/lib/dashboard-types";
+
+const EMPTY = {
+  items: [] as MenuItem[],
+  totalRevenue: 0,
+  totalMargin: 0,
+  blendedPct: 0,
+  stars: 0,
+  dogs: 0,
+  medianSold: 0,
+  medianMargin: 0,
+};
 
 export function useArchitectData(search: DashboardSearch) {
-  return useMemo(() => {
-    const span = daysForPreset(search.range);
-    const days = generateDemoDays(span, search.center);
-    const totalCovers = days.reduce((a, d) => a + d.covers, 0);
-    const items = computeMenuMatrix(totalCovers).sort((a, b) => b.margin - a.margin);
-
-    const totalRevenue = items.reduce((a, i) => a + i.revenue, 0);
-    const totalMargin = items.reduce((a, i) => a + i.margin, 0);
-    const blendedPct = totalRevenue ? (totalMargin / totalRevenue) * 100 : 0;
-    const stars = items.filter((i) => i.classification === "Star").length;
-    const dogs = items.filter((i) => i.classification === "Dog").length;
-    const medianSold = median(items.map((i) => i.sold));
-    const medianMargin = median(items.map((i) => i.margin));
-
-    return { items, totalRevenue, totalMargin, blendedPct, stars, dogs, medianSold, medianMargin };
-  }, [search.range, search.center]);
+  const fn = useServerFn(getArchitectData);
+  const range = getDateRange(search.range);
+  const query = useQuery({
+    queryKey: ["architect", range, search.center],
+    queryFn: () => fn({ data: { ...range, center: search.center } }),
+  });
+  return { ...(query.data ?? EMPTY), isLoading: query.isPending, error: query.error };
 }

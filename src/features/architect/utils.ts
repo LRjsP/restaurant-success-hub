@@ -1,4 +1,4 @@
-import type { MenuItem } from "@/lib/demo-data";
+import type { MenuItem } from "@/lib/dashboard-types";
 
 export const CLASS_COLOR: Record<MenuItem["classification"], string> = {
   Star: "var(--color-success)",

@@ -3,7 +3,7 @@ import { Input } from "@/components/ui/input";
 import { Search, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { fmtCurrency, fmtNumber } from "@/lib/format";
-import type { MenuItem } from "@/lib/demo-data";
+import type { MenuItem } from "@/lib/dashboard-types";
 import { CLASS_COLOR, type SortKey } from "./utils";
 
 const SORT_FIELDS: { key: SortKey; label: string }[] = [
