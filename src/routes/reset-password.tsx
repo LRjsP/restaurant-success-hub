@@ -7,7 +7,23 @@ import { Label } from "@/components/ui/label";
 import { updatePassword } from "@/features/auth/data";
 
 export const Route = createFileRoute("/reset-password")({
-  head: () => ({ meta: [{ title: "Reset password — MISE.OPS" }] }),
+  head: () => ({
+    meta: [
+      { title: "Reset password — MISE.OPS" },
+      {
+        name: "description",
+        content:
+          "Set a new password for your MISE.OPS account after requesting a password recovery email. Choose a strong password you have not used before.",
+      },
+      { property: "og:title", content: "Reset password — MISE.OPS" },
+      {
+        property: "og:description",
+        content:
+          "Securely choose a new password for your MISE.OPS restaurant operations account.",
+      },
+      { name: "robots", content: "noindex" },
+    ],
+  }),
   component: ResetPasswordPage,
 });
 
