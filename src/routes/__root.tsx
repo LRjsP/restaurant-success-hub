@@ -80,19 +80,56 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
-      { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { title: "MISE.OPS — Restaurant Operations Dashboard" },
+      {
+        name: "description",
+        content:
+          "MISE.OPS is a comprehensive restaurant operations platform for managing service, finances, menu engineering, and events.",
+      },
+      { name: "author", content: "MISE.OPS" },
+      { property: "og:site_name", content: "MISE.OPS" },
+      { property: "og:title", content: "MISE.OPS — Restaurant Operations Dashboard" },
+      {
+        property: "og:description",
+        content:
+          "Manage your restaurant operations with real-time insights into service, finance, and menu engineering.",
+      },
       { property: "og:type", content: "website" },
+      { property: "og:url", content: "https://seat-to-shelf-guru-mise-ops.lovable.app/" },
       { name: "twitter:card", content: "summary" },
-      { name: "twitter:site", content: "@Lovable" },
+      { name: "twitter:title", content: "MISE.OPS — Restaurant Operations Dashboard" },
+      {
+        name: "twitter:description",
+        content:
+          "Manage your restaurant operations with real-time insights into service, finance, and menu engineering.",
+      },
     ],
     links: [
       {
         rel: "stylesheet",
         href: appCss,
+      },
+    ],
+    scripts: [
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@graph": [
+            {
+              "@type": "Organization",
+              name: "MISE.OPS",
+              url: "https://seat-to-shelf-guru-mise-ops.lovable.app/",
+              description:
+                "Restaurant operations intelligence — unified service, back-office, menu engineering, and events CRM for modern hospitality groups.",
+            },
+            {
+              "@type": "WebSite",
+              name: "MISE.OPS",
+              url: "https://seat-to-shelf-guru-mise-ops.lovable.app/",
+            },
+          ],
+        }),
       },
     ],
   }),

@@ -117,8 +117,10 @@ export function AuthPage() {
           </div>
           <h1 className="font-mono text-lg font-semibold tracking-tight">
             MISE<span className="text-muted-foreground">.OPS</span>
+            <span className="sr-only"> — Restaurant Operations Intelligence</span>
           </h1>
           <p className="mt-1 text-xs text-muted-foreground">Restaurant operations intelligence</p>
+
         </div>
 
         {search.reason === "expired" && (
