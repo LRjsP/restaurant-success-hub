@@ -1,0 +1,9 @@
+# MISE.OPS
+
+> Restaurant operations intelligence — a unified platform for service, back-office finance, menu engineering, and events CRM.
+
+MISE.OPS helps mid-market hospitality groups replace fragmented legacy tools with a single dashboard. Cashiers and waiters enter tickets in **The Service**, and the data flows in real time into **The Floor** (daily pulse), **The Office** (weekly P&L), **The Architect** (menu engineering), and **The Pipeline** (events & catering CRM).
+
+## Pages
+
+- [Sign in](/auth): Sign in or request a demo account.

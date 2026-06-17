@@ -1,0 +1,12 @@
+User-agent: *
+Allow: /
+Disallow: /auth
+Disallow: /reset-password
+Disallow: /floor
+Disallow: /office
+Disallow: /architect
+Disallow: /pipeline
+Disallow: /service
+Disallow: /users
+
+Sitemap: https://seat-to-shelf-guru-mise-ops.lovable.app/sitemap.xml
