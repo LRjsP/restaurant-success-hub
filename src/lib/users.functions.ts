@@ -36,7 +36,7 @@ async function writeAudit(
     action,
     entity,
     entity_id: entityId,
-    meta,
+    meta: meta as any,
   });
 }
 
