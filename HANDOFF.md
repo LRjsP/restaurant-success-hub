@@ -296,3 +296,12 @@ Zustand.
 - [ ] New protected server fn: `.middleware([requireSupabaseAuth])` and,
       if it mutates, an explicit `has_role` admin check.
 - [ ] Route files stay thin — page logic belongs in `src/features/<name>/`.
+
+---
+
+## Known Gaps
+
+### Offline banner (`OfflineBanner.tsx`)
+**What failed:** The banner was rendering on every page load instead of only when the connection was lost.  
+**Root cause:** `navigator.onLine` returns `false` in preview/iframe environments (including the Lovable preview) even when the user has a working internet connection. Using it as the initial state caused a false-positive offline signal.  
+**How it should behave:** The banner should remain hidden by default and appear **only** when the browser fires an actual `offline` event. The component now defaults to `online = true` and flips to `false` exclusively via the `window` `offline` event listener.
