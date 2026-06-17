@@ -30,9 +30,11 @@ interface KpiTileProps {
 }
 
 export function KpiTile({ label, value, delta, deltaLabel, hint, variant = "default", large, tooltip }: KpiTileProps) {
-  const deltaColor = delta === undefined ? "" :
-    delta > 0.5 ? "text-[var(--color-success)]" :
-    delta < -0.5 ? "text-[var(--color-destructive)]" :
+  const compareEnabled = useCompareEnabled();
+  const showDelta = compareEnabled && delta !== undefined;
+  const deltaColor = !showDelta ? "" :
+    delta! > 0.5 ? "text-[var(--color-success)]" :
+    delta! < -0.5 ? "text-[var(--color-destructive)]" :
     "text-muted-foreground";
 
   const accentBar = {
