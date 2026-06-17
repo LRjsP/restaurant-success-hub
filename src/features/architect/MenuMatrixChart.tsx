@@ -11,7 +11,7 @@ import {
   ReferenceLine,
 } from "recharts";
 import { fmtCurrency, fmtNumber } from "@/lib/format";
-import type { MenuItem } from "@/lib/demo-data";
+import type { MenuItem } from "@/lib/dashboard-types";
 import { CLASS_COLOR } from "./utils";
 
 export function MenuMatrixChart({

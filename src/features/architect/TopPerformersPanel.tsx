@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
 import { fmtCurrency } from "@/lib/format";
-import type { MenuItem } from "@/lib/demo-data";
+import type { MenuItem } from "@/lib/dashboard-types";
 import { CLASS_COLOR } from "./utils";
 
 export function TopPerformersPanel({ items }: { items: MenuItem[] }) {
