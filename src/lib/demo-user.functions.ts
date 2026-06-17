@@ -9,6 +9,14 @@ const DEMO_USERS = [
   { email: DEMO_STAFF_EMAIL, fullName: "Demo Staff", role: "staff" as const },
 ];
 
+// Demo bootstrap is a privileged, service-role code path. It is disabled by
+// default so the published site cannot expose it. To run the one-time
+// first-user seed, set ENABLE_DEMO_BOOTSTRAP=true in the server environment
+// AND ensure no auth users exist yet (the handler re-checks both).
+function demoBootstrapEnabled() {
+  return process.env.ENABLE_DEMO_BOOTSTRAP === "true";
+}
+
 async function authUserCount(supabaseAdmin: any) {
   const { data, error } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 1 });
   if (error) throw new Error(error.message);
@@ -16,6 +24,13 @@ async function authUserCount(supabaseAdmin: any) {
 }
 
 export const getDemoSetupStatus = createServerFn({ method: "GET" }).handler(async () => {
+  if (!demoBootstrapEnabled()) {
+    return {
+      canSetupDemo: false,
+      accounts: [],
+      password: "",
+    };
+  }
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   return {
     canSetupDemo: (await authUserCount(supabaseAdmin)) === 0,
@@ -25,6 +40,9 @@ export const getDemoSetupStatus = createServerFn({ method: "GET" }).handler(asyn
 });
 
 export const seedInitialDemoUsers = createServerFn({ method: "POST" }).handler(async () => {
+  if (!demoBootstrapEnabled()) {
+    throw new Error("Demo bootstrap is disabled.");
+  }
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
   if ((await authUserCount(supabaseAdmin)) > 0) {
@@ -60,9 +78,4 @@ export const seedInitialDemoUsers = createServerFn({ method: "POST" }).handler(a
   }
 
   return { ok: true, accounts: createdAccounts, password: DEMO_PASSWORD };
-});
-
-export const ensureDemoUser = createServerFn({ method: "POST" }).handler(async () => {
-  const result = await seedInitialDemoUsers();
-  return { ok: result.ok, created: true };
 });
