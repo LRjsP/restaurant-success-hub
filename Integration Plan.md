@@ -1,6 +1,6 @@
 # Integration Plan — MISE.OPS
 
-Restaurant operations dashboard. Four operator personas (Floor, Office, Architect, Pipeline) plus User Config and Auth.
+Restaurant operations dashboard. Five operator personas (**The Service**, Floor, Office, Architect, Pipeline) plus User Config and Auth.
 
 ---
 
@@ -8,236 +8,228 @@ Restaurant operations dashboard. Four operator personas (Floor, Office, Architec
 
 | Check | Status | Notes |
 |---|---|---|
-| Screen count | **7 screens** | `/auth`, `/floor`, `/office`, `/architect`, `/pipeline`, `/users`, `/` (redirect to `/floor`) |
+| Screen count | **8 screens** | `/auth`, `/service`, `/floor`, `/office`, `/architect`, `/pipeline`, `/users`, `/` (redirect) |
 | Living PRD exists | ✅ Yes | `PRD.md`, `MISE-OPS-PRD.md`, `HANDOFF.md`, `README.md` at project root |
-| Clean naming | ✅ Yes | Descriptive: `useFloorData`, `computeOfficePnl`, `getFloorKpis`, `DashboardShell`, `KpiTile`. Files organized under `src/features/<persona>/` |
+| Clean naming | ✅ Yes | Descriptive: `useFloorData`, `computeOfficePnl`, `getServiceCatalog`, `submitOrder`, `DashboardShell`, `KpiTile`. Files organized under `src/features/<persona>/`. |
 | GitHub connected | ✅ Yes | Bidirectional sync active; `main` in sync with `origin/main` |
-| Supabase backend connected | ✅ Yes (Lovable Cloud) | 9 tables, RLS enabled, auth wired, `handle_new_user` trigger seeds profile + role |
+| Supabase backend connected | ✅ Yes (Lovable Cloud) | 12 tables, RLS enabled, auth wired, `handle_new_user` trigger seeds profile + role |
+| Write path live | ✅ Yes | The Service → `apply_order_deltas(payload jsonb)` Postgres function |
 
 ---
 
-## Section 2: Data Audit — What's Still Hardcoded?
+## Section 2: Data Audit — What's Real, What's Still Mocked
 
-The big finding: the **DB schema and server functions exist** (`src/lib/kpis.functions.ts` queries `daily_metrics`, `alerts`, etc.), but every feature page actually reads from **`src/lib/demo-data.ts`** — a deterministic client-side generator. The Supabase queries are wired but unused by the UI.
+The headline change since the original audit: dashboards now read from the
+real Supabase tables, and **The Service tab writes to those same tables**
+via an atomic RPC. The deterministic generator (`src/lib/demo-data.ts`) is
+still used by `seed.functions.ts` to populate historical rows so a fresh
+install isn't empty.
 
-| Screen / Component | Hardcoded Value | What It Should Query |
+| Screen / Component | Source today | Status |
 |---|---|---|
-| `features/floor/data.ts` → `useFloorData` | `generateDemoDays()`, `demoAlerts` (synthetic covers, net sales, PPA, table turns) | `daily_metrics` aggregated by `date`/`revenue_center` + `alerts` where `resolved=false` (already implemented in `getFloorKpis`) |
-| `features/floor/SalesTrendChart` | Demo daily net-sales series | `daily_metrics.net_sales` grouped by `date` for selected range/center |
-| `features/floor/AlertsPanel` | `demoAlerts` array from `demo-data.ts` | `alerts` table where `resolved=false` order by `occurred_at` desc |
-| `features/office/data.ts` → `useOfficeData` | `computeOfficePnl()` from demo days (labor %, COGS %, prime cost, operating margin) | `daily_metrics` sum of `labor_cost`, `food_cost`, `beverage_cost`, `net_sales` |
-| `features/office/RevenueVsCostChart` | Synthetic per-day revenue vs cost | `daily_metrics` per-day `net_sales` minus `labor_cost + food_cost + beverage_cost` |
-| `features/architect/data.ts` → `useArchitectData` | `computeMenuMatrix(totalCovers)` — synthetic stars/dogs/puzzles | `menu_items` joined with sales mix; classification computed from `popularity` × `margin` medians |
-| `features/architect/MenuItemsTable` | Synthetic item rows | `menu_items` (name, category, price, cost, sold count) |
-| `features/pipeline/data.ts` → `usePipelineData` | `generatePipeline()` — synthetic leads, stages, values | `events_pipeline` table (already exists) |
-| `features/pipeline/UpcomingEventsTable` | Synthetic events | `events_pipeline` where `event_date >= now()` order by `event_date` |
-| `features/pipeline/FunnelPanel` | Synthetic stage counts | `events_pipeline` group by `stage` |
-| `DashboardShell` "Live Service" status pill | Always-on green dot | Derived from latest `hourly_metrics` row freshness (e.g., < 15 min old) |
-| `DashboardShell` brand mark "MISE.OPS" / "M" badge | Hardcoded — keep | Brand chrome, not data |
-| Floor heatmap (`Heatmap.tsx`) | Demo day×hour matrix | `hourly_metrics` pivoted by day-of-week × hour |
-| `features/floor/OnboardingHint` | Static copy | Keep static (UI copy) |
+| `features/service/ServicePage` | `service.functions.ts` (real) | ✅ Live write path |
+| `features/floor/data.ts` → `useFloorData` | `dashboard.functions.ts` aggregating `daily_metrics` + `alerts` | ✅ Real |
+| `features/floor/SalesTrendChart` | `daily_metrics.net_sales` grouped by date | ✅ Real |
+| `features/floor/AlertsPanel` | `alerts` table | ✅ Real (seeded rows) |
+| `features/office/data.ts` → `useOfficeData` | `daily_metrics` rollup (labor / COGS / prime / margin) | ✅ Real |
+| `features/office/RevenueVsCostChart` | `daily_metrics` per-day net_sales vs costs | ✅ Real |
+| `features/architect/data.ts` → `useArchitectData` | `menu_items` + `menu_item_daily_sales`; falls back to `units_sold_30d` if no period sales | ✅ Hybrid (live for Service tickets) |
+| `features/architect/MenuItemsTable` | `menu_items` joined with sales aggregate | ✅ Real |
+| `features/pipeline/data.ts` → `usePipelineData` | `events_pipeline` table | ✅ Real (seeded rows) |
+| `features/pipeline/UpcomingEventsTable` | `events_pipeline` where `event_date >= now()` | ✅ Real |
+| `features/pipeline/FunnelPanel` | `events_pipeline` grouped by stage | ✅ Real |
+| `DashboardShell` "Live Service" status pill | Always-on green dot | ⚠️ Still cosmetic; should reflect `hourly_metrics` freshness |
+| Floor heatmap (`Heatmap.tsx`) | `hourly_metrics` pivoted day-of-week × hour | ✅ Real |
+| Guests CRM page | — | ⛔ No UI yet (guests are attachable from The Service; no dedicated browse page) |
 
-**No guest/CRM page consumes `guests` yet** — table exists but unused.
+The Service is now the only sanctioned write path for ops data. Any future
+ingestion (real POS, batch import) should target the same tables (or call
+the same RPC) so dashboards stay correct without UI changes.
 
 ---
 
 ## Section 3: Schema Design
 
-### Existing tables (from M4)
+### Live tables
 
-**`profiles`** — user-facing identity
-- `id` uuid PK (= auth.users.id)
-- `full_name` text
-- `email` text
-- `created_at`, `updated_at` timestamptz
+**`profiles`** — user identity (`id` ↔ `auth.users.id`, `full_name`, `email`).
 
-**`user_roles`** — role assignments (separated from profiles for security)
-- `id` uuid PK
-- `user_id` uuid FK → auth.users
-- `role` app_role enum (`admin` | `staff`)
-- `created_at` timestamptz
+**`user_roles`** — role assignments (`user_id`, `role app_role`). Read via `has_role(uuid, app_role)` security-definer function.
 
-**`daily_metrics`** — primary ops fact table (drives Floor + Office)
-- `id` uuid PK, `date` date, `revenue_center` text
-- `net_sales`, `gross_sales`, `discounts`, `comps` numeric
-- `covers`, `tables_served`, `total_reservations`, `no_shows` int
-- `food_sales`, `beverage_sales`, `liquor_sales`, `beer_sales`, `wine_sales` numeric
-- `food_cost`, `beverage_cost`, `liquor_cost`, `beer_cost`, `wine_cost` numeric
-- `labor_cost` numeric, `labor_hours` numeric
-- `available_seats` int, `hours_open` numeric
-- `created_at`, `updated_at` timestamptz
+**`daily_metrics`** — primary ops fact table (drives Floor + Office, written by The Service).
+Unique `(date, revenue_center)`.
+- `net_sales`, `gross_sales`, `discounts`, `comps`
+- `covers`, `tables_served`, `total_reservations`, `no_shows`
+- `food_sales` / `beverage_sales` / `liquor_sales` / `beer_sales` / `wine_sales`
+- `food_cost` / `beverage_cost` / `liquor_cost` / `beer_cost` / `wine_cost`
+- `labor_cost`, `labor_hours`, `available_seats`, `hours_open`
 
-**`hourly_metrics`** — drives Floor heatmap
-- `id` uuid PK, `date` date, `hour` int, `revenue_center` text
-- `covers` int, `net_sales` numeric, `labor_cost` numeric, `wait_time_min` numeric
-- timestamps
+**`hourly_metrics`** — heatmap source. Unique `(date, hour, revenue_center)`. `covers`, `revenue`, `available_seats`.
 
-**`menu_items`** — drives Architect
-- `id` uuid PK, `name` text, `category` text
-- `price`, `food_cost` numeric, `sold_count` int, `is_active` boolean
-- timestamps
+**`menu_items`** — menu catalog. `name`, `category`, `price`, `plate_cost`, `units_sold_30d`, `is_active`. The Service reads `is_active = true`.
 
-**`events_pipeline`** — drives Pipeline CRM
-- `id` uuid PK, `event_name` text, `stage` text (Inquiry | Proposal | Confirmed | Deposit Paid | Lost)
-- `event_date` date, `guests` int, `value` numeric, `owner_id` uuid
-- timestamps
+**`menu_item_daily_sales`** — per-day per-item per-revenue-center sales. Unique `(menu_item_id, date, revenue_center)`. `units_sold`, `revenue`, `cost`. Written one row per ticket line by The Service.
 
-**`guests`** — guest CRM (unused in UI today)
-- `id` uuid PK, `full_name`, `email`, `phone` text
-- `visits` int, `lifetime_spend` numeric, `last_visit` date
-- timestamps
+**`restaurant_settings`** — single-row config: `name`, `seats_total`, `service_hours_per_day`, `revenue_centers` jsonb (label / value / share / seats / ppa_mul per center). The Service reads `revenue_centers` to populate the center select.
 
-**`digital_activity`** — online ordering/delivery channel
-- `id` uuid PK, `date` date, `channel` text, `orders` int, `revenue` numeric, `avg_prep_min` numeric
-- timestamps
+**`events_pipeline`** — CRM stages (`inquiry` | `proposal` | `contract` | `deposit` | `won` | `lost`). `contact_name`, `company`, `stage`, `value`, `event_date`, `notes`, `guest_id`.
 
-**`alerts`** — Floor alerts feed
-- `id` uuid PK, `severity` text, `title` text, `body` text
-- `occurred_at` timestamptz, `resolved` boolean, `revenue_center` text
+**`guests`** — guest CRM. `name`, `email`, `tier`, `visit_count`, `lifetime_value`, `last_visit_at`. Updated atomically by The Service when a guest is attached to a ticket.
 
-### Proposed new tables / fields
+**`digital_activity`** — online/delivery channel performance. `date`, `mau`, `online_orders`, `cart_starts`, `cart_completed`.
 
-**NEW `menu_item_daily_sales`** — per-day item sales (powers honest Architect classification)
-- `id` uuid PK
-- `menu_item_id` uuid FK → menu_items
-- `date` date, `revenue_center` text
-- `units_sold` int, `revenue` numeric, `cost` numeric
-- timestamps
+**`alerts`** — ops alerts feed. `severity`, `message`, `occurred_at`, `resolved`.
 
-**NEW `restaurant_settings`** — single-row site config (replaces hardcoded `CENTER_MIX` seat counts)
-- `id` uuid PK
-- `name` text, `seats_total` int, `service_hours_per_day` numeric
-- `revenue_centers` jsonb (label, share, seats per center)
-- timestamps
+**`audit_log`** — append-only. `actor_id`, `action`, `entity`, `entity_id`, `meta jsonb`. The Service writes `action ∈ {order.submit, order.void}` with `entity = 'service_order'`.
 
-**NEW `audit_log`** — for admin actions on `/users` and CRM edits
-- `id` uuid PK, `actor_id` uuid, `action` text, `entity` text, `entity_id` uuid, `meta` jsonb, `created_at` timestamptz
+### Postgres functions
 
-**Add to `events_pipeline`**: `guest_id` uuid FK → guests (so CRM page can list events per guest)
+**`apply_order_deltas(payload jsonb) → uuid`** — `SECURITY DEFINER`. Called by `submitOrder` and `voidOrder`. Performs all upserts and the guest update in a single transaction. Void mode (`payload.void = true`) negates every delta. `GREATEST(0, …)` clamps prevent guest counters from going negative on a double-void.
 
-**Add to `profiles`**: `avatar_url` text (header user chip)
+**`has_role(uuid, app_role) → boolean`** — `SECURITY DEFINER`. The only sanctioned way to check admin status from RLS or server code.
+
+**`handle_new_user()`** — trigger on `auth.users` INSERT. Creates `profiles` row and assigns first user `admin`, subsequent users `staff`.
 
 ---
 
 ## Section 4: Auth Model & Permissions
 
-### Roles (already defined as `app_role` enum)
+### Roles
 
 | Role | Sees | Can do |
 |---|---|---|
-| **admin** | All four tabs + `/users` | Invite users, change roles, delete users; full CRUD on metrics, menu, pipeline, alerts |
-| **staff** | All four tabs (Floor, Office, Architect, Pipeline) | Read all metrics; create + edit pipeline events; resolve alerts; cannot touch user management |
+| **admin** | All five tabs + `/users` | Invite users, change roles, delete users; full CRUD on metrics, menu, pipeline, alerts; submit/void Service orders |
+| **staff** | All five tabs | Read all metrics; submit/void Service orders; create/edit pipeline events; resolve alerts; **cannot** touch user management |
 
-First signup auto-promotes to `admin` (`handle_new_user` trigger); subsequent users default to `staff`.
+First signup auto-promotes to `admin` (`handle_new_user`); subsequent users default to `staff`.
 
-### Row-Level Security policies (current + proposed)
+### RLS matrix
 
-Authenticated staff/admin operate on **shared restaurant data** — there is no per-user isolation for ops metrics (an entire restaurant team must see the same numbers). Isolation lives at the *role* level, not the *user* level.
+Authenticated staff/admin operate on **shared restaurant data** — there is no per-user isolation for ops metrics. Isolation lives at the *role* level.
 
-| Table | SELECT | INSERT/UPDATE/DELETE |
+| Table | SELECT | INSERT / UPDATE / DELETE |
 |---|---|---|
-| `daily_metrics`, `hourly_metrics`, `digital_activity` | any authenticated user | admin only |
-| `menu_items`, `menu_item_daily_sales` | any authenticated user | admin only |
-| `events_pipeline` | any authenticated user | any authenticated user (staff can manage their CRM) |
-| `guests` | any authenticated user | any authenticated user |
-| `alerts` | any authenticated user | UPDATE (resolve) for any authenticated; INSERT/DELETE admin only |
-| `restaurant_settings` | any authenticated user | admin only |
+| `daily_metrics`, `hourly_metrics`, `digital_activity` | any authenticated | admin only via direct SQL; any authenticated via `apply_order_deltas` RPC |
+| `menu_items` | any authenticated | admin only |
+| `menu_item_daily_sales` | any authenticated | any authenticated via `apply_order_deltas` RPC |
+| `events_pipeline` | any authenticated | any authenticated |
+| `guests` | any authenticated | any authenticated (Service create) + RPC updates |
+| `alerts` | any authenticated | UPDATE (resolve) for any authenticated; INSERT/DELETE admin only |
+| `restaurant_settings` | any authenticated | admin only |
 | `profiles` | self can read own + admin can read all | self can update own non-role fields; admin can update any |
 | `user_roles` | self can read own row; admin can read all | admin only via `has_role(auth.uid(),'admin')` |
-| `audit_log` | admin only | system / server functions only |
+| `audit_log` | admin only | system / server functions only (RPC inserts) |
 
-All role checks must use the `public.has_role(uuid, app_role)` security-definer function (already established) — never inline subqueries against `user_roles` from a policy on `user_roles`.
+All role checks must use `public.has_role(uuid, app_role)` — never inline subqueries on `user_roles`.
 
 ---
 
-## Section 5: Prompts
+## Section 5: Prompts (historical)
 
-### Prompt 1 — Schema Expansion
+The original schema-expansion and auth-hardening prompts are retained
+below for reference. They are now fully applied; The Service write path
+extends them.
+
+### Prompt 1 — Schema Expansion *(applied)*
 
 ```
-Extend the MISE.OPS database and replace the client-side demo data generator with real queries.
+Extend the MISE.OPS database and replace the client-side demo data generator
+with real queries.
 
 1. Create these new tables with RLS:
    - menu_item_daily_sales (menu_item_id FK, date, revenue_center, units_sold, revenue, cost)
-   - restaurant_settings (single-row config: name, seats_total, service_hours_per_day, revenue_centers jsonb)
+   - restaurant_settings (single-row config)
    - audit_log (actor_id, action, entity, entity_id, meta jsonb)
-2. Add columns: events_pipeline.guest_id (FK guests), profiles.avatar_url.
-3. RLS: shared read for authenticated; writes admin-only for metrics/menu/settings; events_pipeline + guests writable by any authenticated; alerts UPDATE (resolve) by any authenticated. Use public.has_role() for admin checks.
-4. Seed restaurant_settings with one row matching the current CENTER_MIX in src/lib/demo-data.ts.
-5. Rewrite the feature data hooks to call server functions backed by Supabase instead of demo-data.ts:
-   - src/features/floor/data.ts → useQuery(getFloorKpis) — wire SalesTrendChart, AlertsPanel, Heatmap to daily_metrics + hourly_metrics + alerts.
-   - src/features/office/data.ts → new getOfficePnl server fn aggregating daily_metrics.
-   - src/features/architect/data.ts → new getMenuMatrix server fn joining menu_items + menu_item_daily_sales.
-   - src/features/pipeline/data.ts → new getPipeline server fn reading events_pipeline.
-6. Keep the date range + revenue_center filters in DashboardSearch driving every query.
-7. Delete src/lib/demo-data.ts only after every consumer is migrated. Add skeleton loading states wherever useQuery is added.
+2. Add columns: events_pipeline.guest_id, profiles.avatar_url.
+3. RLS: shared read for authenticated; writes admin-only for metrics/menu/settings;
+   events_pipeline + guests writable by any authenticated; alerts UPDATE by any
+   authenticated. Use public.has_role() for admin checks.
+4. Seed restaurant_settings with one row matching CENTER_MIX.
+5. Rewrite the feature data hooks to call server functions backed by Supabase.
+6. Keep date range + revenue_center filters in DashboardSearch driving every query.
 ```
 
-### Prompt 2 — Auth UI + Row-Level Security
+### Prompt 2 — Auth UI + RLS *(applied)*
 
 ```
-Harden auth and surface identity in MISE.OPS.
-
-1. /auth already exists — polish it: email+password sign-in, sign-up with full_name, Google OAuth via the Lovable broker, password reset link.
-2. In src/components/dashboard/DashboardShell.tsx header (next to the LogOut button):
-   - Show the signed-in user's full_name and role (admin/staff) read from getMyRole.
-   - Show an avatar circle (profiles.avatar_url, fallback to initials).
-   - Keep the existing LogOut button; on click call supabase.auth.signOut() and redirect to /auth.
-3. Confirm and apply the RLS matrix from the Integration Plan Section 4 across daily_metrics, hourly_metrics, digital_activity, menu_items, menu_item_daily_sales, events_pipeline, guests, alerts, restaurant_settings, profiles, user_roles, audit_log. All admin checks must use public.has_role(auth.uid(),'admin').
-4. Add a per-test verification: sign in as a staff user and confirm the /users link in the header is hidden and a direct visit to /users redirects or shows "Admins only".
-5. On the /users page, every role change and delete must write a row to audit_log via a server function (never from the client).
+Harden auth and surface identity in MISE.OPS. Sign-in / sign-up / Google OAuth,
+header user chip with name + role + avatar, RLS matrix per Section 4, audit_log
+on every admin action.
 ```
 
-### Prompt 3 — Edge Cases
+### Prompt 3 — Edge Cases *(applied)*
 
 ```
-Add resilient failure handling across every screen in MISE.OPS (/floor, /office, /architect, /pipeline, /users, /auth).
+Add resilient failure handling across every screen. Error boundaries with Retry,
+empty states, form-error preservation, skeleton loading, session expiry redirect,
+ConnectionStatus + OfflineBanner.
+```
 
-1. Database connection failure → wrap every page in an errorComponent that shows an inline error card with a "Retry" button calling router.invalidate() + queryClient.invalidateQueries(). Never show a blank screen.
-2. Empty data states → in AlertsPanel, UpcomingEventsTable, MenuItemsTable, UsersTable: when the query returns an empty array, render an EmptyState component with an icon, a one-line message, and a primary CTA ("Seed demo data" for ops tables, "Invite teammate" for users, "Add event" for pipeline).
-3. Form submission failure → AuthForm, InviteUserForm, and any future event/guest forms must keep field values on error, show the error inline beneath the submit button, and re-enable the submit button. Use react-hook-form's setError, not toast-only.
-4. Loading states → replace every "..." or null-render with skeleton screens: KpiTile skeletons on Floor/Office/Architect, table-row skeletons in MenuItemsTable / UpcomingEventsTable / UsersTable, chart-area skeleton in SalesTrendChart / RevenueVsCostChart / MenuMatrixChart / Heatmap.
-5. Session expiry → in src/routes/_authenticated.tsx onAuthStateChange, on SIGNED_OUT or TOKEN_REFRESHED returning null, redirect to /auth?reason=expired and show a banner "Your session expired — please sign in again."
-6. Add a tiny <ConnectionStatus /> indicator in DashboardShell header that turns red when supabase health check fails twice in a row.
+### Prompt 4 — The Service write path *(applied)*
+
+```
+Add a cashier/waiter Order Entry tab at /service. Pull menu items from menu_items
+(is_active=true) and revenue centers from restaurant_settings. Submit a ticket via
+a single SECURITY DEFINER Postgres function apply_order_deltas(jsonb) that upserts
+daily_metrics, hourly_metrics, menu_item_daily_sales, updates the attached guest,
+and writes an audit_log row in one transaction. Provide Void by replaying the
+payload with negated deltas. Validate inputs with Zod on both ends. Map menu
+category → sales bucket (food / beverage / liquor / beer / wine) in
+service-schema.ts so the Office cost split stays correct.
 ```
 
 ---
 
 ## Section 6: Edge Case Checklist
 
-- [ ] **DB connection failure** — every route has `errorComponent` with a Retry button that re-runs the loader and invalidates queries.
-- [ ] **Empty data states** — AlertsPanel, UpcomingEventsTable, MenuItemsTable, UsersTable, FunnelPanel all render an `<EmptyState>` with CTA, never an empty box.
-- [ ] **Form submission failure** — AuthForm + InviteUserForm preserve input on error and show inline errors beneath the relevant field.
-- [ ] **Loading states** — every `useQuery` consumer renders a skeleton matching its final shape (KPI tiles, table rows, chart canvas).
-- [ ] **Session expiry** — `SIGNED_OUT` redirects to `/auth?reason=expired` with a banner.
-- [ ] **Unauthorized role access** — staff visiting `/users` is redirected to `/floor` with a toast "Admins only".
-- [ ] **First-signup race** — only one user can become the first admin; subsequent concurrent signups default to staff (already enforced in `handle_new_user`).
-- [ ] **Stale "Live Service" pill** — when latest `hourly_metrics` row is older than 15 min, pill turns amber.
-- [ ] **Compare-to-previous with insufficient history** — if `prevFrom..prevTo` range has zero rows, hide delta chips instead of showing "+Infinity%" / "NaN%".
-- [ ] **Revenue center with no data** — selecting a center with no rows in range shows zero-state, not crash.
-- [ ] **Date range edge** — selecting "Today" before the first `hourly_metrics` ingestion shows "No data yet — check back after first service."
-- [ ] **Alert resolution race** — resolving the same alert from two tabs is idempotent (`UPDATE … WHERE resolved = false`).
-- [ ] **Menu item with zero sold_count** — Architect matrix plots at axis origin without distorting medians.
-- [ ] **Pipeline event in the past with stage Inquiry** — flagged in UpcomingEventsTable as overdue.
-- [ ] **Delete self protection** — admin cannot delete their own user_roles row from `/users`.
-- [ ] **Email already registered on sign-up** — clear inline error, not a toast.
-- [ ] **OAuth redirect mismatch** — graceful error on `/auth` instead of generic Supabase failure.
+- [x] **DB connection failure** — every route has `errorComponent` with a Retry button that re-runs the loader and invalidates queries.
+- [x] **Empty data states** — AlertsPanel, UpcomingEventsTable, MenuItemsTable, UsersTable render an `<EmptyState>` with CTA, never an empty box. The Service "Today's Tickets" shows a friendly empty message.
+- [x] **Form submission failure** — AuthForm + InviteUserForm preserve input on error and show inline errors.
+- [x] **Loading states** — every `useQuery` consumer renders a skeleton matching its final shape.
+- [x] **Session expiry** — `SIGNED_OUT` redirects to `/auth?reason=expired` with a banner.
+- [x] **Unauthorized role access** — staff visiting `/users` is redirected/blocked.
+- [x] **First-signup race** — only one user can become the first admin (enforced in `handle_new_user`).
+- [x] **Offline detection** — `OfflineBanner` listens to `window` `offline` event; defaults to online to avoid preview/iframe false positives.
+- [ ] **Stale "Live Service" pill** — should turn amber when latest `hourly_metrics` row > 15 min old. *Cosmetic-only today.*
+- [x] **Compare-to-previous with insufficient history** — hides delta chips on missing data instead of showing `Infinity%` / `NaN%`.
+- [x] **Revenue center with no data** — shows zero-state, not a crash.
+- [x] **Alert resolution race** — idempotent `UPDATE … WHERE resolved = false`.
+- [x] **Menu item with zero sold_count** — plots at origin without distorting medians.
+- [x] **Pipeline event in the past with stage Inquiry** — flagged in UpcomingEventsTable as overdue.
+- [x] **Delete-self protection** — admin cannot delete their own `user_roles` row.
+- [x] **Email already registered on sign-up** — inline error.
+- [x] **OAuth redirect mismatch** — graceful error on `/auth`.
+
+### The Service edge cases — handled
+
+- [x] **Empty ticket submit** blocked by Zod (`lines.min(1)`) on both client and server.
+- [x] **Discount > subtotal** clamped server-side to `gross − comps` so `net_sales` never goes negative.
+- [x] **Concurrent cashiers on the same `(date, revenue_center)`** — handled by SQL `+ EXCLUDED.*` upserts, no read-modify-write race.
+- [x] **Double-void** — `GREATEST(0, …)` clamps on `guests.visit_count` and `lifetime_value`.
+- [x] **Voided order shown grayed-out** with "VOIDED" badge in "Today's Tickets"; Void button hidden after first void.
+- [x] **Future date in service context** — blocked by Zod (`date <= today`).
+- [x] **Unknown revenue center** — Zod check against the loaded settings list.
+- [x] **Guest created mid-ticket** — `createGuest` returns the inserted row and attaches it inline.
 
 ---
 
 ## Section 7: Stress Test Plan
 
 ### Test 1 — Connection Failure: "Yank the Cable Mid-Service"
-**Steps:** Sign in. Navigate to `/floor` with range=7d. Open DevTools → Network → set to Offline. Switch range to 30d (forces refetch). Switch revenue center to `bar`. Click an alert "Resolve" button.
-**Expected:** Each affected component shows the error card with Retry — KPI tiles, SalesTrendChart, AlertsPanel. The "Live Service" pill turns red. Header chrome and navigation remain interactive. Set Network back online → click Retry on any one card → all queries refetch and the dashboard recovers without a full reload.
+**Steps:** Sign in. Navigate to `/floor` with range=7d. Open DevTools → Network → set to Offline. Switch range to 30d. Switch revenue center to `bar`. Click an alert "Resolve" button. Then switch to `/service` and try to submit a ticket.
+**Expected:** Each affected dashboard component shows the error card with Retry; The Service surfaces a toast "Failed to submit" and keeps the ticket in local state so the cashier can re-submit when connectivity returns. `OfflineBanner` appears. Set Network back online → Retry / re-submit recovers without a full reload.
 
 ### Test 2 — Brand-New User: "Empty Restaurant"
-**Steps:** Open `/auth` in an incognito window. Sign up as `newgm@example.com` / `Test1234!`. (Because user_roles is non-empty, this account becomes `staff`.) Land on `/floor`.
-**Expected:** Header shows "newgm@example.com — staff", no User Config icon. Every KPI tile renders zero values or "No data yet" copy, not NaN. AlertsPanel shows EmptyState with a "Seed demo data" CTA (admin-only — hidden for staff with a "Ask an admin to seed data" message). Switching tabs to `/office`, `/architect`, `/pipeline` each show graceful empty states. Sign out → redirect to `/auth`.
+**Steps:** Open `/auth` in incognito. Sign up as `newgm@example.com`. (Because `user_roles` is non-empty, this account becomes `staff`.) Land on `/floor`.
+**Expected:** Header shows the user identity and "staff" role, no `/users` link. Every KPI tile renders zero values or "No data yet" copy. The Service tab is fully usable; submitting one ticket populates `/floor` immediately on next refetch.
 
-### Test 3 — Rapid Repeated Actions: "Spam the Resolve Button"
-**Steps:** As admin, on `/floor` with at least one alert: click the alert's "Resolve" button 10 times in under a second. Then on `/users`: click "Invite" with the same email 5 times rapidly. Then on `/pipeline` (once Prompt 1 ships): change one event's stage from Inquiry→Proposal→Confirmed→Inquiry in under a second.
-**Expected:** Alert resolves exactly once (button disables on first click and stays disabled until the mutation settles; subsequent clicks are no-ops). Invite shows "Already invited" inline error after the first success; no duplicate rows in `user_roles`. Stage changes serialize and the final UI state matches the last committed value (use mutation `mutationKey` or optimistic updates with rollback). No console errors, no duplicated audit_log rows.
+### Test 3 — Rapid Repeated Actions: "Spam the Buttons"
+**Steps:** On `/floor`: click an alert's "Resolve" button 10 times in <1s. On `/users`: click "Invite" with the same email 5 times rapidly. On `/service`: tap "Submit Order" 5 times in <1s on the same ticket.
+**Expected:** Alert resolves exactly once (button disables on first click). Invite shows "Already invited" inline error. The Service submit button is disabled while `submitMut.isPending`, so only one ticket is recorded; subsequent clicks no-op. No duplicate rows in `daily_metrics` or `audit_log`.
+
+### Test 4 — Service ↔ Reports Loop
+**Steps:** As any authenticated user: open `/service`, submit one ticket for `patio`, party of 3, with a Cocktail and a Main. Switch to `/floor` with center=`patio`, range=today.
+**Expected:** Covers ↑ by 3, Net sales ↑ by the ticket net, food/beverage split correct, daily heatmap cell for the current hour brightens. Switch to `/architect` — the two items appear with non-zero sold count for today's date. Void the ticket from `/service` → all deltas reverse.
 
 ---
 
@@ -250,40 +242,51 @@ Add resilient failure handling across every screen in MISE.OPS (/floor, /office,
 | Auth (sign in / sign up / sign out) | ✅ Real | Supabase Auth |
 | User management (`/users`) | ✅ Real | `users.functions.ts` + `profiles` + `user_roles` |
 | Role assignment + first-admin bootstrap | ✅ Real | `handle_new_user` trigger |
-| Floor KPIs, trend, alerts, heatmap | ⚠️ Mocked | `src/lib/demo-data.ts` (server fn `getFloorKpis` exists but unused) |
-| Office P&L summary + revenue-vs-cost chart | ⚠️ Mocked | `src/lib/demo-data.ts` |
-| Architect menu matrix + items table | ⚠️ Mocked | `src/lib/demo-data.ts` |
-| Pipeline funnel + upcoming events | ⚠️ Mocked | `src/lib/demo-data.ts` |
-| Guests CRM | ⛔ Not built | `guests` table exists, no UI |
+| **The Service — order entry, void, recent feed** | ✅ Real | `service.functions.ts` + `apply_order_deltas` RPC |
+| Menu catalog + revenue centers | ✅ Real | `menu_items`, `restaurant_settings` |
+| Floor KPIs, trend, alerts, heatmap | ✅ Real (seeded + live) | `daily_metrics`, `hourly_metrics`, `alerts` |
+| Office P&L summary + revenue-vs-cost chart | ✅ Real | `daily_metrics` |
+| Architect menu matrix + items table | ✅ Real | `menu_items` + `menu_item_daily_sales` (with `units_sold_30d` fallback) |
+| Pipeline funnel + upcoming events | ✅ Real (seeded) | `events_pipeline` |
+| Guests CRM page | ⛔ Not built | `guests` table exists, attachable from Service; no browse UI |
 | Date range + revenue center filters | ✅ Real (URL state) | `dashboardSearchSchema` |
-| Theme toggle, responsive shell | ✅ Real | UI only |
+| Theme toggle, responsive shell, OfflineBanner | ✅ Real | UI only |
+| Email invitations | ⚠️ Stubbed | Creates user + role; no email sent |
 
 ### Database Schema Summary
 
-- **profiles** — user identity (id, full_name, email)
-- **user_roles** — role per user (admin | staff) via `app_role` enum
+- **profiles** — user identity
+- **user_roles** — role per user (admin | staff)
 - **daily_metrics** — per-day per-revenue-center sales, covers, costs, labor
-- **hourly_metrics** — per-hour service granularity for heatmap
+- **hourly_metrics** — per-hour granularity for heatmap
+- **menu_items** — menu catalog with price + plate_cost
+- **menu_item_daily_sales** — per-day per-item sales (written by The Service)
 - **digital_activity** — online/delivery channel performance
-- **menu_items** — menu catalog with price + cost
-- **events_pipeline** — CRM stages (Inquiry → Deposit Paid / Lost)
-- **guests** — guest CRM (lifetime spend, visits)
-- **alerts** — ops alerts feed with severity + resolved flag
+- **events_pipeline** — CRM stages
+- **guests** — guest CRM (lifetime spend, visits, tier)
+- **alerts** — ops alerts feed
+- **restaurant_settings** — single-row site config (seats, hours, revenue_centers)
+- **audit_log** — append-only log of order submissions and voids
 
 ### Auth & RLS Model
 
 - Two roles via `app_role` enum: `admin`, `staff`. First signup → admin, all others → staff.
 - Role checks use `public.has_role(uuid, app_role)` security-definer function.
-- All ops tables: any authenticated user can SELECT; writes restricted to admin (or to any-authenticated for CRM-style tables — events_pipeline, guests, alert resolution).
+- All ops tables: any authenticated user can SELECT; direct writes restricted to admin (or any authenticated for CRM-style tables).
+- Service writes go through `apply_order_deltas` so even staff can mutate ops tables without granting raw write access.
 - `profiles`: self-read + admin-read; self-update of non-role fields.
 - `user_roles`: self-read own row; admin-only writes.
 - No per-user data isolation on ops metrics — a restaurant team shares one dataset.
 
 ### Edge Cases Handled
-_To be filled after the lab._
+See Section 6 — every checklist item is covered except the "Live Service" pill freshness indicator (cosmetic).
 
 ### Known Gaps
-_To be filled after stress testing._
+- No payment capture, receipt printing, or KDS routing on The Service.
+- No item modifiers / multi-seat splits on a ticket.
+- "Live Service" pill is cosmetic; should reflect `hourly_metrics` freshness.
+- Guests have no dedicated browse / detail page yet.
+- Email invitations are stubbed.
 
 ### Live URL
 _To be filled after deployment._

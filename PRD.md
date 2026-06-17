@@ -1,16 +1,18 @@
 # MISE.OPS — Product Requirements Document
 
-*Extracted from working prototype · June 2026*
+*Extracted from working prototype · June 2026 (rev. The Service)*
 
 ---
 
 ## 1. What it is
 
-MISE.OPS is an **opinionated restaurant operations intelligence dashboard** that consolidates the four lenses that actually drive a restaurant — **service, profit, menu, and pipeline** — into a single tool with consistent filters, period-over-period comparison, and plain-language metric framing.
+MISE.OPS is an **opinionated restaurant operations intelligence dashboard** that consolidates the four lenses that actually drive a restaurant — **service, profit, menu, and pipeline** — into a single tool with consistent filters, period-over-period comparison, and plain-language metric framing. It is paired with a built-in **order-entry terminal** so the same tool that surfaces the numbers is also the tool that produces them.
 
-It is optimised for one recurring scenario:
+It is optimised for two recurring scenarios:
 
 > *Monday morning, 15 minutes, one coffee. Understand last week, decide this week, confirm the pipeline is healthy.*
+
+> *Friday service, 7:42pm. A waiter rings in a 4-top, the GM watches covers and PPA move on the Floor dashboard from the host stand.*
 
 ---
 
@@ -19,6 +21,7 @@ It is optimised for one recurring scenario:
 - **Primary:** Owner-operators and General Managers of independent, single-unit or small-group restaurants ($1M–$10M revenue).
 - **Secondary:** Executive Chefs and Beverage Directors who need menu-engineering and yield data.
 - **Tertiary:** Catering / Events managers tracking a private-events pipeline.
+- **Operational:** Cashiers and waiters using **The Service** tab as the in-shift ticketing surface.
 
 Persona excludes large chains (they have BI teams) and pure QSR (different ops model).
 
@@ -26,11 +29,11 @@ Persona excludes large chains (they have BI teams) and pure QSR (different ops m
 
 ## 3. Problem & Hypothesis
 
-**Problem.** Independent operators don't lack data — they lack a *single, opinionated view* of it. Decisions get stitched together from POS reports, a bookkeeper's spreadsheet, a Google Calendar of events, and gut feel. The result is slow reactions, missed margin, and a catering pipeline managed in someone's inbox.
+**Problem.** Independent operators don't lack data — they lack a *single, opinionated view* of it, AND they lack a tight loop between the floor (where data is created) and the office (where it is read). Decisions get stitched together from POS reports, a bookkeeper's spreadsheet, a Google Calendar of events, and gut feel.
 
-**Hypothesis.** *If* operators can see service, P&L, menu, and pipeline in one tool with shared filters and period comparison, *then* they will answer questions like "Are we losing money on Tuesdays?", "Which items deserve a price bump?", or "How healthy is Q3 catering?" in **under 30 seconds** — and act on them weekly instead of monthly.
+**Hypothesis.** *If* operators can see service, P&L, menu, and pipeline in one tool with shared filters and period comparison — *and* if every ticket entered on the floor lands instantly in those views — *then* they will answer questions like "Are we losing money on Tuesdays?", "Which items deserve a price bump?", or "How healthy is Q3 catering?" in **under 30 seconds**, and act on them weekly instead of monthly.
 
-**Falsifiable in beta by:** measuring time-to-answer on a fixed task list and weekly active sessions per operator.
+**Falsifiable in beta by:** measuring time-to-answer on a fixed task list, weekly active sessions per operator, and the share of service revenue captured through The Service vs. external POS exports.
 
 ---
 
@@ -38,14 +41,15 @@ Persona excludes large chains (they have BI teams) and pure QSR (different ops m
 
 | # | Screen | Route | Purpose | Core widgets |
 |---|---|---|---|---|
-| 1 | **Auth** | `/auth` | Sign-in / sign-up. First-run seeding of demo admin + staff accounts when the user table is empty. | Email+password form, first-time setup panel |
-| 2 | **The Floor** — *Daily Pulse* | `/floor` | "How is service performing?" Yesterday/last-week at a glance. | KPIs: covers, net sales, PPA, avg check, discount %. Day×time demand heatmap. |
-| 3 | **The Office** — *Weekly P&L* | `/office` | "Are we making money?" | Labor %, COGS %, prime cost, operating profit, weekly revenue vs cost chart. |
-| 4 | **The Architect** — *Menu Engineering* | `/architect` | "Which menu items earn their place?" | Popularity × margin scatter with Stars / Plowhorses / Puzzles / Dogs quadrants. |
-| 5 | **The Pipeline** — *Events CRM* | `/pipeline` | "What's coming?" Catering and private events. | Open pipeline value, win rate, upcoming events list, stage funnel. |
-| 6 | **User Config** *(admin only)* | `/users` | Manage staff accounts and roles. | User list, role assignment, invite flow. |
+| 1 | **Auth** | `/auth` | Sign-in / sign-up. First-run seeding of demo admin + staff accounts. | Email+password form, first-time setup panel |
+| 2 | **The Service** — *Order Entry* | `/service` | "Ring in a ticket." Cashier & waiter terminal that writes directly into the operational tables. | Service context (date · hour · revenue center · party · table · server), live menu grid by category, ticket panel with qty / comp / discount, guest picker, recent-tickets feed with Void. |
+| 3 | **The Floor** — *Daily Pulse* | `/floor` | "How is service performing?" | KPIs: covers, net sales, PPA, avg check, discount %. Day×time demand heatmap. |
+| 4 | **The Office** — *Weekly P&L* | `/office` | "Are we making money?" | Labor %, COGS %, prime cost, operating profit, weekly revenue vs cost chart. |
+| 5 | **The Architect** — *Menu Engineering* | `/architect` | "Which menu items earn their place?" | Popularity × margin scatter with Stars / Plowhorses / Puzzles / Dogs. |
+| 6 | **The Pipeline** — *Events CRM* | `/pipeline` | "What's coming?" | Open pipeline value, win rate, upcoming events list, stage funnel. |
+| 7 | **User Config** *(admin only)* | `/users` | Manage staff accounts and roles. | User list, role assignment, invite flow. |
 
-All four dashboard screens share a single `DashboardShell`: header with live-service indicator, tab nav with atmospheric per-tab backgrounds, and a persistent **filter bar** (date range · revenue center · compare-to-prior toggle). Filters are **URL-driven** so any view is shareable.
+The four analytics dashboards share a single `DashboardShell` with a persistent **filter bar** (date range · revenue center · compare-to-prior). Filters are **URL-driven** so any view is shareable. The Service tab lives inside the same shell but uses its own per-ticket context controls.
 
 ---
 
@@ -55,9 +59,17 @@ All four dashboard screens share a single `DashboardShell`: header with live-ser
    /  ──► (auth?) ──no──► /auth ──sign in──┐
         └──yes──► /floor                   │
                                            ▼
-                ┌──── DashboardShell (header · tabs · filter bar) ────┐
+                ┌──── DashboardShell ──────────────────────────────────┐
+                │  /service                                            │
+                │     │ submit ticket                                  │
+                │     ▼                                                │
+                │  apply_order_deltas RPC (atomic)                     │
+                │     ↳ daily_metrics, hourly_metrics,                 │
+                │       menu_item_daily_sales, guests, audit_log       │
+                │     │                                                │
+                │     ▼                                                │
                 │  /floor → /office → /architect → /pipeline           │
-                │  Filters (range, center, compare) persist via URL    │
+                │  Filters (range, center, compare) via URL            │
                 └──────────────────────────────────────────────────────┘
                             │ admin only
                             ▼
@@ -68,8 +80,15 @@ All four dashboard screens share a single `DashboardShell`: header with live-ser
 1. Land on **Floor** → scan yesterday's covers + heatmap for soft dayparts.
 2. Switch to **Office** → confirm labor % and COGS % within target.
 3. Open **Architect** → flag one Plowhorse for a price test.
-4. Finish on **Pipeline** → confirm next week's events, chase at-risk leads.
+4. Finish on **Pipeline** → confirm next week's events.
 5. Forward a filtered URL to chef / partner.
+
+**Typical in-service ticket flow**
+1. Open **The Service** → pick *Patio*, party of 4, table 12.
+2. Tap items from the *Mains* / *Cocktails* tabs; quantities increment on repeat tap.
+3. Apply a 10% loyalty discount; mark a comped dessert.
+4. (Optional) attach a **Guest** for lifetime-value tracking.
+5. Submit → KPIs on Floor and item rows on Architect update on next visit; Void from "Today's Tickets" if needed.
 
 ---
 
@@ -77,16 +96,18 @@ All four dashboard screens share a single `DashboardShell`: header with live-ser
 
 **Product success (north stars)**
 - Time-to-answer on the 4 canonical questions < 30 s.
-- ≥ 1 session per operator per week (the "Monday review" habit).
-- ≥ 3 of 4 tabs viewed per session (proves the integrated view is the value).
+- ≥ 1 dashboard session per operator per week.
+- ≥ 3 of 4 analytics tabs viewed per session.
+- Share of service revenue captured through The Service ≥ 80% during pilots.
 
 **In-product metrics surfaced to the user**
-- *Floor:* Covers, Net Sales, PPA (per-person average), Avg Check, Discount %, Comp $, day×time demand.
+- *Service:* Net total per ticket, channel, party size, comps, discounts, food-cost estimate. "Today's Tickets" feed with per-row Void.
+- *Floor:* Covers, Net Sales, PPA, Avg Check, Discount %, Comp $, day×time demand.
 - *Office:* Net Sales, Labor %, COGS %, Prime Cost %, Operating Profit, Food vs Beverage mix.
 - *Architect:* Item popularity (mix %), contribution margin $, classification (Star/Plowhorse/Puzzle/Dog).
-- *Pipeline:* Open pipeline $, Win rate %, Booked revenue, Upcoming events count, Stage funnel.
+- *Pipeline:* Open pipeline $, Win rate %, Booked revenue, Upcoming events, Stage funnel.
 
-All metrics support **period-over-period delta** via the Compare toggle.
+All analytics metrics support **period-over-period delta** via the Compare toggle.
 
 ---
 
@@ -94,10 +115,10 @@ All metrics support **period-over-period delta** via the Compare toggle.
 
 | Role | Access |
 |---|---|
-| **Owner / Admin** | All 4 dashboards + `/users` config. Can invite, change roles, remove. |
-| **Staff** | All 4 dashboards. Read-only on user config. |
+| **Owner / Admin** | All 4 analytics dashboards + The Service + `/users`. Can invite, change roles, remove. |
+| **Staff** | All 4 analytics dashboards + The Service (submit / void). Read-only on user config. |
 
-Roles are stored in a dedicated `user_roles` table (never on profiles) and checked via a `SECURITY DEFINER` `has_role()` function used in RLS policies.
+Roles are stored in `user_roles` (never on profiles) and checked via the `SECURITY DEFINER` `has_role()` function used in RLS policies. Every Service ticket records the `actor_id` in `audit_log` for attribution.
 
 ---
 
@@ -105,24 +126,29 @@ Roles are stored in a dedicated `user_roles` table (never on profiles) and check
 
 | Layer | Status | Notes |
 |---|---|---|
-| **Auth (email + password, Google OAuth)** | **Real** | Supabase Auth. First-run flow seeds `admin@miseops.dev` / `staff@miseops.dev` (password `MiseDemo!2026`) when the user table is empty. |
-| **Roles, profiles, user management** | **Real** | `profiles` + `user_roles` tables with RLS; admin-only mutations. |
-| **Route shell, filter bar, URL state, theming, navigation** | **Real** | TanStack Start + Router, Zod-validated search params, design tokens. |
-| **Dashboard data — Floor / Office / Architect / Pipeline KPIs, charts, heatmap, events list** | **Mocked** | All numbers generated by `src/lib/demo-data.ts` — deterministic, seeded by date range + revenue center. No POS, accounting, or CRM is connected. |
-| **Period comparison** | **Mocked** | Computed against the same generator with a shifted range. |
-| **Revenue-center filter** | **Mocked** | Generator applies share + PPA modifiers per center (dining room / bar / patio / takeout / delivery / catering). |
-| **Events pipeline records** | **Mocked** | Stored in `events_pipeline` table for RLS demo; not connected to a real CRM. |
+| **Auth (email + password, Google OAuth)** | **Real** | Supabase Auth. First-run seeds `admin@miseops.dev` / `staff@miseops.dev` (`MiseDemo!2026`). |
+| **Roles, profiles, user management** | **Real** | `profiles` + `user_roles` with RLS; admin-only mutations. |
+| **Route shell, filter bar, URL state, theming** | **Real** | TanStack Start + Router, Zod search params, design tokens. |
+| **The Service — order entry → DB** | **Real** | `submitOrder` server fn → `apply_order_deltas` Postgres function performs all upserts atomically across `daily_metrics`, `hourly_metrics`, `menu_item_daily_sales`, `guests`, `audit_log`. Void replays with negated deltas. |
+| **Menu catalog + revenue centers** | **Real** | Service reads `menu_items` and `restaurant_settings.revenue_centers` live. |
+| **Dashboard data — Floor / Office / Architect / Pipeline** | **Hybrid** | Dashboard queries hit the real tables. Historical demo rows seeded by `seed.functions.ts`; new rows produced live by The Service. The Architect falls back to `menu_items.units_sold_30d` when no per-item sales exist in the range. |
+| **Period comparison** | **Real** | Same tables with a shifted range. |
+| **Revenue-center filter** | **Real** | `WHERE revenue_center = ?` against `daily_metrics`. |
+| **Events pipeline records** | **Mocked** | Seeded into `events_pipeline`; no CRM connector yet. |
 | **Email invites for new users** | **Stubbed** | UI exists; transactional email not wired. |
 
 ---
 
 ## 9. Non-goals (current scope)
 
-- No POS / accounting / CRM integrations (Square, Toast, QuickBooks, etc.) — the generator defines the contract a real integration must satisfy later.
+- No POS / accounting / CRM integrations (Square, Toast, QuickBooks). The Service IS the POS for the prototype; the schema defines the contract a real connector must satisfy later.
+- No payment capture (cash / card split, tips, settlement) on The Service — net sales are recorded, payment instruments are not.
+- No printed-receipt or kitchen-display routing.
+- No item modifiers, multi-seat ticket splitting, or course timing.
 - No multi-location consolidation.
 - No mobile-native app — responsive web only.
-- No forecasting / prescriptive AI — descriptive analytics first; recommendations are a v2 bet.
-- No payroll, scheduling, or inventory management — adjacent products, not core.
+- No forecasting / prescriptive AI.
+- No payroll, scheduling, or inventory management.
 
 ---
 
