@@ -125,7 +125,7 @@ export function Panel({ title, subtitle, children, className, action, tooltip }:
       <div className="flex items-center justify-between border-b border-border px-5 py-3">
         <div>
           <div className="flex items-center gap-1.5">
-            <h3 className="font-mono text-[11px] uppercase tracking-widest text-foreground">{title}</h3>
+            <h2 className="font-mono text-[11px] uppercase tracking-widest text-foreground">{title}</h2>
             {tooltip && <PanelInfo tooltip={tooltip} />}
           </div>
           {subtitle && <p className="mt-0.5 text-[10px] font-mono text-muted-foreground">{subtitle}</p>}

@@ -13,11 +13,15 @@ export const Route = createFileRoute("/sitemap.xml")({
   server: {
     handlers: {
       GET: async () => {
-        // Only the public sign-in surface is indexable; dashboard routes
-        // sit behind authentication and are excluded.
         const entries: SitemapEntry[] = [
           { path: "/", changefreq: "weekly", priority: "1.0" },
           { path: "/auth", changefreq: "monthly", priority: "0.5" },
+          { path: "/reset-password", changefreq: "yearly", priority: "0.2" },
+          { path: "/floor", changefreq: "weekly", priority: "0.4" },
+          { path: "/office", changefreq: "weekly", priority: "0.4" },
+          { path: "/architect", changefreq: "weekly", priority: "0.4" },
+          { path: "/pipeline", changefreq: "weekly", priority: "0.4" },
+          { path: "/service", changefreq: "weekly", priority: "0.4" },
         ];
 
         const urls = entries.map((e) =>
