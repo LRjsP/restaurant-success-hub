@@ -1,10 +1,22 @@
 import { Info } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { getRouteApi } from "@tanstack/react-router";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+
+const layoutApi = getRouteApi("/_authenticated");
+
+function useCompareEnabled() {
+  try {
+    const s = layoutApi.useSearch() as { compare?: boolean };
+    return s?.compare ?? true;
+  } catch {
+    return true;
+  }
+}
 
 interface KpiTileProps {
   label: string;
@@ -18,9 +30,11 @@ interface KpiTileProps {
 }
 
 export function KpiTile({ label, value, delta, deltaLabel, hint, variant = "default", large, tooltip }: KpiTileProps) {
-  const deltaColor = delta === undefined ? "" :
-    delta > 0.5 ? "text-[var(--color-success)]" :
-    delta < -0.5 ? "text-[var(--color-destructive)]" :
+  const compareEnabled = useCompareEnabled();
+  const showDelta = compareEnabled && delta !== undefined;
+  const deltaColor = !showDelta ? "" :
+    delta! > 0.5 ? "text-[var(--color-success)]" :
+    delta! < -0.5 ? "text-[var(--color-destructive)]" :
     "text-muted-foreground";
 
   const accentBar = {
@@ -51,19 +65,19 @@ export function KpiTile({ label, value, delta, deltaLabel, hint, variant = "defa
             </Tooltip>
           )}
         </div>
-        {delta !== undefined && (
+        {showDelta && (
           <span className={cn("font-mono text-[10px] tabular-nums", deltaColor)}>
-            {delta > 0 ? "+" : ""}{delta.toFixed(1)}%
+            {delta! > 0 ? "+" : ""}{delta!.toFixed(1)}%
           </span>
         )}
       </div>
       <div className={cn("font-mono font-bold tabular-nums tracking-tight text-foreground", large ? "text-4xl" : "text-3xl")}>
         {value}
       </div>
-      {(hint || deltaLabel) && (
+      {(hint || (showDelta && deltaLabel)) && (
         <div className="mt-3 flex items-center justify-between text-[10px] font-mono uppercase tracking-wide text-muted-foreground">
           <span>{hint}</span>
-          <span>{deltaLabel}</span>
+          <span>{showDelta ? deltaLabel : ""}</span>
         </div>
       )}
     </div>
