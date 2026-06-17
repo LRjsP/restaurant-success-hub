@@ -13,6 +13,7 @@ import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { ThemeProvider } from "../components/theme-provider";
 import { TooltipProvider } from "../components/ui/tooltip";
+import { OfflineBanner } from "../components/OfflineBanner";
 
 function NotFoundComponent() {
   return (
@@ -124,6 +125,7 @@ function RootComponent() {
         <TooltipProvider delayDuration={150}>
           {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
           <Outlet />
+          <OfflineBanner />
         </TooltipProvider>
       </ThemeProvider>
     </QueryClientProvider>
