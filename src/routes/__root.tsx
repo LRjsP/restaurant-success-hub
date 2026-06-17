@@ -125,6 +125,7 @@ function RootComponent() {
         <TooltipProvider delayDuration={150}>
           {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
           <Outlet />
+          <OfflineBanner />
         </TooltipProvider>
       </ThemeProvider>
     </QueryClientProvider>
