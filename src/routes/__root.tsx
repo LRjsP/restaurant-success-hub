@@ -103,6 +103,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         content:
           "Manage your restaurant operations with real-time insights into service, finance, and menu engineering.",
       },
+      { name: "description", content: "Practice Project for VCPM at Product School" },
+      { property: "og:description", content: "Practice Project for VCPM at Product School" },
+      { name: "twitter:description", content: "Practice Project for VCPM at Product School" },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/d02d0fb4-d398-4884-b5de-d669cfed6cf1/id-preview-0e0de0b1--6b1c6c76-fa04-4bda-8fc5-e804a852fe56.lovable.app-1781739922669.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/d02d0fb4-d398-4884-b5de-d669cfed6cf1/id-preview-0e0de0b1--6b1c6c76-fa04-4bda-8fc5-e804a852fe56.lovable.app-1781739922669.png" },
     ],
     links: [
       {
