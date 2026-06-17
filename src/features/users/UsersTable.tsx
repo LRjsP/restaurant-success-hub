@@ -1,8 +1,16 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Trash2, ShieldCheck, ShieldOff } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Trash2, ShieldCheck, ShieldOff, UserPlus } from "lucide-react";
 import { useDeleteUser, useUpdateRole, type AppRole } from "./data";
+import { EmptyState } from "@/components/dashboard/EmptyState";
+import { TableRowsSkeleton } from "@/components/dashboard/Skeletons";
 
 type Row = { id: string; email: string; full_name?: string | null; role: AppRole };
 
