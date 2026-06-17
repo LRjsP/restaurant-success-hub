@@ -44,6 +44,36 @@ export type Database = {
         }
         Relationships: []
       }
+      audit_log: {
+        Row: {
+          action: string
+          actor_id: string | null
+          created_at: string
+          entity: string
+          entity_id: string | null
+          id: string
+          meta: Json
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          created_at?: string
+          entity: string
+          entity_id?: string | null
+          id?: string
+          meta?: Json
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          created_at?: string
+          entity?: string
+          entity_id?: string | null
+          id?: string
+          meta?: Json
+        }
+        Relationships: []
+      }
       daily_metrics: {
         Row: {
           available_seats: number
@@ -167,6 +197,7 @@ export type Database = {
           contact_name: string
           created_at: string
           event_date: string | null
+          guest_id: string | null
           id: string
           notes: string | null
           stage: string
@@ -177,6 +208,7 @@ export type Database = {
           contact_name: string
           created_at?: string
           event_date?: string | null
+          guest_id?: string | null
           id?: string
           notes?: string | null
           stage?: string
@@ -187,12 +219,21 @@ export type Database = {
           contact_name?: string
           created_at?: string
           event_date?: string | null
+          guest_id?: string | null
           id?: string
           notes?: string | null
           stage?: string
           value?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "events_pipeline_guest_id_fkey"
+            columns: ["guest_id"]
+            isOneToOne: false
+            referencedRelation: "guests"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       guests: {
         Row: {
@@ -260,6 +301,50 @@ export type Database = {
         }
         Relationships: []
       }
+      menu_item_daily_sales: {
+        Row: {
+          cost: number
+          created_at: string
+          date: string
+          id: string
+          menu_item_id: string
+          revenue: number
+          revenue_center: string
+          units_sold: number
+          updated_at: string
+        }
+        Insert: {
+          cost?: number
+          created_at?: string
+          date: string
+          id?: string
+          menu_item_id: string
+          revenue?: number
+          revenue_center?: string
+          units_sold?: number
+          updated_at?: string
+        }
+        Update: {
+          cost?: number
+          created_at?: string
+          date?: string
+          id?: string
+          menu_item_id?: string
+          revenue?: number
+          revenue_center?: string
+          units_sold?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "menu_item_daily_sales_menu_item_id_fkey"
+            columns: ["menu_item_id"]
+            isOneToOne: false
+            referencedRelation: "menu_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       menu_items: {
         Row: {
           category: string
@@ -295,6 +380,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          avatar_url: string | null
           created_at: string
           email: string | null
           full_name: string | null
@@ -302,6 +388,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          avatar_url?: string | null
           created_at?: string
           email?: string | null
           full_name?: string | null
@@ -309,10 +396,41 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          avatar_url?: string | null
           created_at?: string
           email?: string | null
           full_name?: string | null
           id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      restaurant_settings: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          revenue_centers: Json
+          seats_total: number
+          service_hours_per_day: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          revenue_centers?: Json
+          seats_total?: number
+          service_hours_per_day?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          revenue_centers?: Json
+          seats_total?: number
+          service_hours_per_day?: number
           updated_at?: string
         }
         Relationships: []
