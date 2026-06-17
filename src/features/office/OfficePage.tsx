@@ -37,7 +37,9 @@ export function OfficePage() {
 
   return (
     <div className="space-y-6">
+      <h1 className="sr-only">The Office — Weekly P&amp;L</h1>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+
         <KpiTile
           label="Net Revenue"
           value={fmtCurrency(pnl.netSales)}

@@ -37,7 +37,9 @@ export function ArchitectPage() {
 
   return (
     <div className="space-y-6">
+      <h1 className="sr-only">The Architect — Menu Engineering</h1>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+
         <KpiTile label="Menu Revenue" value={fmtCurrency(totalRevenue)} hint={`${items.length} items`} tooltip="Total revenue attributed to menu items in this period." />
         <KpiTile label="Total Margin" value={fmtCurrency(totalMargin)} hint={`${blendedPct.toFixed(1)}% blended`} variant="success" tooltip="Contribution margin: revenue minus food cost across all items." />
         <KpiTile label="Stars" value={String(stars)} hint="High pop · high margin" variant="success" tooltip="High-popularity, high-margin items — protect and feature these." />

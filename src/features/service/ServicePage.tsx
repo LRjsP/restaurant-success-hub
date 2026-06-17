@@ -190,14 +190,15 @@ export function ServicePage() {
                       <div className="truncate text-sm font-medium">{l.name}</div>
                       <div className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">{l.category}</div>
                     </div>
-                    <button onClick={() => removeLine(i)} className="text-muted-foreground hover:text-destructive"><Trash2 className="h-3.5 w-3.5" /></button>
+                    <button onClick={() => removeLine(i)} aria-label={`Remove ${l.name} from ticket`} className="text-muted-foreground hover:text-destructive"><Trash2 className="h-3.5 w-3.5" aria-hidden /></button>
                   </div>
                   <div className="mt-2 flex items-center justify-between">
                     <div className="flex items-center gap-1">
-                      <Button size="icon" variant="outline" className="h-7 w-7" onClick={() => updateLine(i, { qty: Math.max(1, l.qty - 1) })}><Minus className="h-3 w-3" /></Button>
+                      <Button size="icon" variant="outline" aria-label={`Decrease quantity of ${l.name}`} className="h-7 w-7" onClick={() => updateLine(i, { qty: Math.max(1, l.qty - 1) })}><Minus className="h-3 w-3" aria-hidden /></Button>
                       <span className="w-6 text-center font-mono text-sm">{l.qty}</span>
-                      <Button size="icon" variant="outline" className="h-7 w-7" onClick={() => updateLine(i, { qty: l.qty + 1 })}><Plus className="h-3 w-3" /></Button>
+                      <Button size="icon" variant="outline" aria-label={`Increase quantity of ${l.name}`} className="h-7 w-7" onClick={() => updateLine(i, { qty: l.qty + 1 })}><Plus className="h-3 w-3" aria-hidden /></Button>
                     </div>
+
                     <div className="flex items-center gap-2">
                       <label className="flex items-center gap-1 text-[11px] text-muted-foreground">
                         <input type="checkbox" checked={l.comp} onChange={(e) => updateLine(i, { comp: e.target.checked })} />
@@ -309,7 +310,7 @@ function GuestPicker({ guest, onChange }: { guest: Guest | null; onChange: (g: G
           <div className="font-medium">{guest.name}</div>
           <div className="font-mono text-[10px] uppercase text-muted-foreground">{guest.tier} · {guest.visit_count} visits</div>
         </div>
-        <button onClick={() => onChange(null)} className="text-muted-foreground hover:text-foreground"><X className="h-4 w-4" /></button>
+        <button onClick={() => onChange(null)} aria-label="Clear selected guest" className="text-muted-foreground hover:text-foreground"><X className="h-4 w-4" aria-hidden /></button>
       </div>
     );
   }

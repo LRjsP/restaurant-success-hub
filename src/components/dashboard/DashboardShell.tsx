@@ -171,13 +171,15 @@ export function DashboardShell({
                 <TooltipTrigger asChild>
                   <Link
                     to="/users"
+                    aria-label="Open user configuration"
                     search={(prev: any) => prev}
                     className={`flex h-8 w-8 items-center justify-center rounded-sm border border-border text-muted-foreground transition-colors hover:text-foreground ${
                       pathname === "/users" ? "bg-accent/10 text-accent border-accent/40" : ""
                     }`}
                   >
-                    <Users className="h-3.5 w-3.5" />
+                    <Users className="h-3.5 w-3.5" aria-hidden />
                   </Link>
+
                 </TooltipTrigger>
                 <TooltipContent side="bottom">User Config</TooltipContent>
               </Tooltip>
@@ -198,9 +200,10 @@ export function DashboardShell({
                 </div>
               </div>
             )}
-            <Button variant="ghost" size="sm" onClick={handleSignOut} className="text-muted-foreground hover:text-foreground">
-              <LogOut className="h-3.5 w-3.5" />
+            <Button variant="ghost" size="sm" aria-label="Sign out" onClick={handleSignOut} className="text-muted-foreground hover:text-foreground">
+              <LogOut className="h-3.5 w-3.5" aria-hidden />
             </Button>
+
           </div>
         </div>
 

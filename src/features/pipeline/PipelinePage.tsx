@@ -34,7 +34,9 @@ export function PipelinePage() {
 
   return (
     <div className="space-y-6">
+      <h1 className="sr-only">The Pipeline — Events &amp; Catering CRM</h1>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+
         <KpiTile label="Open Pipeline" value={fmtCurrency(totalPipeline)} hint={`${activeCount} active`} tooltip="Combined potential revenue of every event still in play." />
         <KpiTile label="Confirmed" value={fmtCurrency(confirmedValue)} variant="success" hint="Booked + deposit" tooltip="Revenue from Confirmed or Deposit-Paid events." />
         <KpiTile label="Win Rate" value={`${winRate.toFixed(1)}%`} hint="Deposit paid / all" tooltip="Share of all leads that converted to a paid deposit." />
