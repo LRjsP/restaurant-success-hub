@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { LogOut, Users } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import bgFloor from "@/assets/bg-floor.jpg";
@@ -63,7 +64,16 @@ export function DashboardShell({
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const fetchMe = useServerFn(getMyRole);
   const meQuery = useQuery({ queryKey: ["my-role"], queryFn: () => fetchMe(), staleTime: 60_000 });
-  const isAdmin = meQuery.data?.isAdmin ?? false;
+  const me = meQuery.data;
+  const isAdmin = me?.isAdmin ?? false;
+  const displayName = me?.fullName || me?.email || "Signed in";
+  const roleLabel = isAdmin ? "Admin" : me ? "Staff" : "";
+  const initials = (me?.fullName || me?.email || "?")
+    .split(/[\s@.]+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((s) => s[0]?.toUpperCase())
+    .join("") || "?";
 
   const updateSearch = (patch: Partial<DashboardSearch>) => {
     navigate({ to: pathname, search: (prev: any) => ({ ...prev, ...patch }), replace: true });
@@ -161,6 +171,22 @@ export function DashboardShell({
                 </TooltipTrigger>
                 <TooltipContent side="bottom">User Config</TooltipContent>
               </Tooltip>
+            )}
+            {me && (
+              <div className="flex items-center gap-2 rounded-sm border border-border bg-card px-2 py-1">
+                <Avatar className="h-6 w-6">
+                  {me.avatarUrl && <AvatarImage src={me.avatarUrl} alt={displayName} />}
+                  <AvatarFallback className="bg-accent/15 text-[10px] font-mono font-semibold text-accent">
+                    {initials}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="hidden flex-col leading-tight sm:flex">
+                  <span className="text-[11px] font-medium text-foreground">{displayName}</span>
+                  <span className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">
+                    {roleLabel}
+                  </span>
+                </div>
+              </div>
             )}
             <Button variant="ghost" size="sm" onClick={handleSignOut} className="text-muted-foreground hover:text-foreground">
               <LogOut className="h-3.5 w-3.5" />

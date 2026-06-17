@@ -1,6 +1,5 @@
 /**
- * Auth — sign in / sign up page with optional first-time demo seeding.
- * Display logic only — auth + demo seeding live in ./data.
+ * Auth — sign in / sign up / Google OAuth / forgot password.
  */
 import { useState, useEffect } from "react";
 import { useNavigate } from "@tanstack/react-router";
@@ -9,12 +8,25 @@ import { AuthForm } from "./AuthForm";
 import { DemoSetupCard } from "./DemoSetupCard";
 import {
   getActiveSession,
+  sendPasswordReset,
   signIn,
+  signInWithGoogle,
   signUp,
   useDemoStatus,
   useSeedDemoUsers,
   type AuthMode,
 } from "./data";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 
 const FLOOR_SEARCH = { range: "7d" as const, center: "all" as const, compare: true };
 
@@ -25,6 +37,10 @@ export function AuthPage() {
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const [forgotOpen, setForgotOpen] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [forgotLoading, setForgotLoading] = useState(false);
 
   const demoStatus = useDemoStatus();
   const seedMut = useSeedDemoUsers();
@@ -51,6 +67,33 @@ export function AuthPage() {
       toast.error(err.message ?? "Authentication failed");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const onGoogle = async () => {
+    setGoogleLoading(true);
+    try {
+      const result = await signInWithGoogle();
+      if (result.redirected) return; // browser navigates to Google
+      navigate({ to: "/floor", search: FLOOR_SEARCH });
+    } catch (err: any) {
+      toast.error(err.message ?? "Google sign-in failed");
+      setGoogleLoading(false);
+    }
+  };
+
+  const onForgotSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setForgotLoading(true);
+    try {
+      await sendPasswordReset(forgotEmail);
+      toast.success("Reset email sent — check your inbox");
+      setForgotOpen(false);
+      setForgotEmail("");
+    } catch (err: any) {
+      toast.error(err.message ?? "Could not send reset email");
+    } finally {
+      setForgotLoading(false);
     }
   };
 
@@ -99,9 +142,47 @@ export function AuthPage() {
             if (p.fullName !== undefined) setFullName(p.fullName);
           }}
           loading={loading}
+          googleLoading={googleLoading}
           onSubmit={onSubmit}
+          onGoogle={onGoogle}
+          onForgot={() => {
+            setForgotEmail(email);
+            setForgotOpen(true);
+          }}
         />
       </div>
+
+      <Dialog open={forgotOpen} onOpenChange={setForgotOpen}>
+        <DialogContent>
+          <form onSubmit={onForgotSubmit}>
+            <DialogHeader>
+              <DialogTitle>Reset password</DialogTitle>
+              <DialogDescription>
+                Enter your email and we&apos;ll send a link to set a new password.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="mt-4 space-y-1.5">
+              <Label htmlFor="forgot-email">Email</Label>
+              <Input
+                id="forgot-email"
+                type="email"
+                required
+                value={forgotEmail}
+                onChange={(e) => setForgotEmail(e.target.value)}
+                autoComplete="email"
+              />
+            </div>
+            <DialogFooter className="mt-6">
+              <Button type="button" variant="ghost" onClick={() => setForgotOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={forgotLoading}>
+                {forgotLoading ? "Sending…" : "Send reset link"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

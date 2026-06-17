@@ -23,21 +23,48 @@ async function assertAdmin(userId: string) {
   if (!data) throw new Error("Admin role required");
 }
 
+async function writeAudit(
+  actorId: string,
+  action: string,
+  entity: string,
+  entityId: string | null,
+  meta: Record<string, unknown>,
+) {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  await supabaseAdmin.from("audit_log").insert({
+    actor_id: actorId,
+    action,
+    entity,
+    entity_id: entityId,
+    meta: meta as any,
+  });
+}
+
 export const getMyRole = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data, error } = await supabaseAdmin
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", context.userId)
-      .order("role", { ascending: true });
-    if (error) throw new Error(error.message);
-    const roles = (data ?? []).map((r: any) => r.role as AppRole);
+    const [{ data: roles, error: rolesErr }, { data: profile }] = await Promise.all([
+      supabaseAdmin
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", context.userId)
+        .order("role", { ascending: true }),
+      supabaseAdmin
+        .from("profiles")
+        .select("full_name, email, avatar_url")
+        .eq("id", context.userId)
+        .maybeSingle(),
+    ]);
+    if (rolesErr) throw new Error(rolesErr.message);
+    const roleList = (roles ?? []).map((r: any) => r.role as AppRole);
     return {
       userId: context.userId,
-      roles,
-      isAdmin: roles.includes("admin"),
+      roles: roleList,
+      isAdmin: roleList.includes("admin"),
+      fullName: (profile?.full_name as string | null) ?? null,
+      email: (profile?.email as string | null) ?? null,
+      avatarUrl: (profile?.avatar_url as string | null) ?? null,
     };
   });
 
@@ -56,7 +83,6 @@ export const listUsers = createServerFn({ method: "GET" })
     const profileMap = new Map((profiles ?? []).map((p: any) => [p.id, p]));
     const roleMap = new Map<string, AppRole>();
     (roles ?? []).forEach((r: any) => {
-      // admin wins over staff
       if (r.role === "admin" || !roleMap.has(r.user_id)) roleMap.set(r.user_id, r.role);
     });
 
@@ -80,8 +106,7 @@ export const inviteUser = createServerFn({ method: "POST" })
     await assertAdmin(context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    const redirectTo =
-      (process.env.SITE_URL ?? "") + "/auth";
+    const redirectTo = (process.env.SITE_URL ?? "") + "/auth";
 
     const { data: invited, error } = await supabaseAdmin.auth.admin.inviteUserByEmail(data.email, {
       data: { full_name: data.fullName ?? null },
@@ -90,11 +115,14 @@ export const inviteUser = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
 
     const userId = invited.user?.id;
+    if (userId && data.role === "admin") {
+      await supabaseAdmin.from("user_roles").insert({ user_id: userId, role: "admin" });
+    }
     if (userId) {
-      // The trigger inserts 'staff' by default; upgrade if admin requested.
-      if (data.role === "admin") {
-        await supabaseAdmin.from("user_roles").insert({ user_id: userId, role: "admin" });
-      }
+      await writeAudit(context.userId, "user.invite", "user", userId, {
+        email: data.email,
+        role: data.role,
+      });
     }
     return { ok: true };
   });
@@ -108,11 +136,23 @@ export const updateUserRole = createServerFn({ method: "POST" })
   .handler(async ({ context, data }) => {
     await assertAdmin(context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { data: prior } = await supabaseAdmin
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", data.userId);
+    const previousRole = (prior ?? []).map((r: any) => r.role).join(",") || null;
+
     await supabaseAdmin.from("user_roles").delete().eq("user_id", data.userId);
     const { error } = await supabaseAdmin
       .from("user_roles")
       .insert({ user_id: data.userId, role: data.role });
     if (error) throw new Error(error.message);
+
+    await writeAudit(context.userId, "user.role_change", "user", data.userId, {
+      previous_role: previousRole,
+      new_role: data.role,
+    });
     return { ok: true };
   });
 
@@ -123,7 +163,19 @@ export const deleteUser = createServerFn({ method: "POST" })
     await assertAdmin(context.userId);
     if (data.userId === context.userId) throw new Error("You can't delete yourself");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { data: target } = await supabaseAdmin
+      .from("profiles")
+      .select("email, full_name")
+      .eq("id", data.userId)
+      .maybeSingle();
+
     const { error } = await supabaseAdmin.auth.admin.deleteUser(data.userId);
     if (error) throw new Error(error.message);
+
+    await writeAudit(context.userId, "user.delete", "user", data.userId, {
+      email: target?.email ?? null,
+      full_name: target?.full_name ?? null,
+    });
     return { ok: true };
   });
