@@ -65,7 +65,7 @@ export const seedDemoData = createServerFn({ method: "POST" })
     const hourly: any[] = [];
     const digital: any[] = [];
 
-    for (let i = 89; i >= 0; i--) {
+    for (let i = 105; i >= 0; i--) {
       const d = new Date(today);
       d.setUTCDate(d.getUTCDate() - i);
       const iso = d.toISOString().slice(0, 10);
