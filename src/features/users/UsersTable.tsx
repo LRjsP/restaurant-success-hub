@@ -35,7 +35,23 @@ export function UsersTable({ users, isLoading, currentUserId }: { users?: Row[];
           </thead>
           <tbody>
             {isLoading && (
-              <tr><td colSpan={4} className="px-5 py-6 text-center text-muted-foreground">Loading…</td></tr>
+              <tr><td colSpan={4} className="px-5 py-6"><TableRowsSkeleton rows={4} cols={4} /></td></tr>
+            )}
+            {!isLoading && (!users || users.length === 0) && (
+              <tr>
+                <td colSpan={4} className="px-5 py-6">
+                  <EmptyState
+                    icon={UserPlus}
+                    message="No teammates yet."
+                    ctaLabel="Invite teammate"
+                    onCta={() => {
+                      const el = document.getElementById("invite-email");
+                      el?.focus();
+                      el?.scrollIntoView({ behavior: "smooth", block: "center" });
+                    }}
+                  />
+                </td>
+              </tr>
             )}
             {users?.map((u) => {
               const isMe = u.id === currentUserId;
