@@ -14,6 +14,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedUsersRouteImport } from './routes/_authenticated.users'
+import { Route as AuthenticatedServiceRouteImport } from './routes/_authenticated.service'
 import { Route as AuthenticatedPipelineRouteImport } from './routes/_authenticated.pipeline'
 import { Route as AuthenticatedOfficeRouteImport } from './routes/_authenticated.office'
 import { Route as AuthenticatedFloorRouteImport } from './routes/_authenticated.floor'
@@ -41,6 +42,11 @@ const IndexRoute = IndexRouteImport.update({
 const AuthenticatedUsersRoute = AuthenticatedUsersRouteImport.update({
   id: '/users',
   path: '/users',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedServiceRoute = AuthenticatedServiceRouteImport.update({
+  id: '/service',
+  path: '/service',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedPipelineRoute = AuthenticatedPipelineRouteImport.update({
@@ -72,6 +78,7 @@ export interface FileRoutesByFullPath {
   '/floor': typeof AuthenticatedFloorRoute
   '/office': typeof AuthenticatedOfficeRoute
   '/pipeline': typeof AuthenticatedPipelineRoute
+  '/service': typeof AuthenticatedServiceRoute
   '/users': typeof AuthenticatedUsersRoute
 }
 export interface FileRoutesByTo {
@@ -82,6 +89,7 @@ export interface FileRoutesByTo {
   '/floor': typeof AuthenticatedFloorRoute
   '/office': typeof AuthenticatedOfficeRoute
   '/pipeline': typeof AuthenticatedPipelineRoute
+  '/service': typeof AuthenticatedServiceRoute
   '/users': typeof AuthenticatedUsersRoute
 }
 export interface FileRoutesById {
@@ -94,6 +102,7 @@ export interface FileRoutesById {
   '/_authenticated/floor': typeof AuthenticatedFloorRoute
   '/_authenticated/office': typeof AuthenticatedOfficeRoute
   '/_authenticated/pipeline': typeof AuthenticatedPipelineRoute
+  '/_authenticated/service': typeof AuthenticatedServiceRoute
   '/_authenticated/users': typeof AuthenticatedUsersRoute
 }
 export interface FileRouteTypes {
@@ -106,6 +115,7 @@ export interface FileRouteTypes {
     | '/floor'
     | '/office'
     | '/pipeline'
+    | '/service'
     | '/users'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -116,6 +126,7 @@ export interface FileRouteTypes {
     | '/floor'
     | '/office'
     | '/pipeline'
+    | '/service'
     | '/users'
   id:
     | '__root__'
@@ -127,6 +138,7 @@ export interface FileRouteTypes {
     | '/_authenticated/floor'
     | '/_authenticated/office'
     | '/_authenticated/pipeline'
+    | '/_authenticated/service'
     | '/_authenticated/users'
   fileRoutesById: FileRoutesById
 }
@@ -174,6 +186,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedUsersRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/service': {
+      id: '/_authenticated/service'
+      path: '/service'
+      fullPath: '/service'
+      preLoaderRoute: typeof AuthenticatedServiceRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/pipeline': {
       id: '/_authenticated/pipeline'
       path: '/pipeline'
@@ -210,6 +229,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedFloorRoute: typeof AuthenticatedFloorRoute
   AuthenticatedOfficeRoute: typeof AuthenticatedOfficeRoute
   AuthenticatedPipelineRoute: typeof AuthenticatedPipelineRoute
+  AuthenticatedServiceRoute: typeof AuthenticatedServiceRoute
   AuthenticatedUsersRoute: typeof AuthenticatedUsersRoute
 }
 
@@ -218,6 +238,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedFloorRoute: AuthenticatedFloorRoute,
   AuthenticatedOfficeRoute: AuthenticatedOfficeRoute,
   AuthenticatedPipelineRoute: AuthenticatedPipelineRoute,
+  AuthenticatedServiceRoute: AuthenticatedServiceRoute,
   AuthenticatedUsersRoute: AuthenticatedUsersRoute,
 }
 
