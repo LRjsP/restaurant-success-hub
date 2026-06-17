@@ -155,6 +155,7 @@ export function DashboardShell({
                 Live Service
               </span>
             </div>
+            <ConnectionStatus />
             <ThemeToggle />
             {isAdmin && (
               <Tooltip>
