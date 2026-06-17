@@ -255,7 +255,7 @@ export const seedDemoData = createServerFn({ method: "POST" })
     ];
     await supabase.from("alerts").insert(alerts);
 
-    return { ok: true, days: 90 };
+    return { ok: true, days: 106 };
   });
 
 function round2(n: number) {
