@@ -17,6 +17,7 @@ import { LogOut, Users } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { ConnectionStatus } from "@/components/dashboard/ConnectionStatus";
 import bgFloor from "@/assets/bg-floor.jpg";
 import bgOffice from "@/assets/bg-office.jpg";
 import bgArchitect from "@/assets/bg-architect.jpg";
