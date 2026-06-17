@@ -22,8 +22,16 @@ import bgFloor from "@/assets/bg-floor.jpg";
 import bgOffice from "@/assets/bg-office.jpg";
 import bgArchitect from "@/assets/bg-architect.jpg";
 import bgPipeline from "@/assets/bg-pipeline.jpg";
+import bgService from "@/assets/bg-service.jpg";
 
 const TABS = [
+  {
+    to: "/service",
+    label: "The Service",
+    hint: "Order Entry",
+    description: "Cashier & waiter terminal — create orders that feed the dashboards in real time.",
+    bg: bgService,
+  },
   {
     to: "/floor",
     label: "The Floor",
