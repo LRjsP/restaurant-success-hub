@@ -64,7 +64,16 @@ export function DashboardShell({
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const fetchMe = useServerFn(getMyRole);
   const meQuery = useQuery({ queryKey: ["my-role"], queryFn: () => fetchMe(), staleTime: 60_000 });
-  const isAdmin = meQuery.data?.isAdmin ?? false;
+  const me = meQuery.data;
+  const isAdmin = me?.isAdmin ?? false;
+  const displayName = me?.fullName || me?.email || "Signed in";
+  const roleLabel = isAdmin ? "Admin" : me ? "Staff" : "";
+  const initials = (me?.fullName || me?.email || "?")
+    .split(/[\s@.]+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((s) => s[0]?.toUpperCase())
+    .join("") || "?";
 
   const updateSearch = (patch: Partial<DashboardSearch>) => {
     navigate({ to: pathname, search: (prev: any) => ({ ...prev, ...patch }), replace: true });
