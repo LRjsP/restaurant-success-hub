@@ -1,17 +1,18 @@
+import { useEffect } from "react";
+import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import type { AuthMode } from "./data";
 
+type FormValues = { email: string; password: string; fullName: string };
+
 export function AuthForm({
   mode,
   onModeChange,
-  email,
-  password,
-  fullName,
-  onChange,
-  loading,
+  defaultEmail = "",
+  defaultPassword = "",
   googleLoading,
   onSubmit,
   onGoogle,
@@ -19,18 +20,51 @@ export function AuthForm({
 }: {
   mode: AuthMode;
   onModeChange: (m: AuthMode) => void;
-  email: string;
-  password: string;
-  fullName: string;
-  onChange: (patch: { email?: string; password?: string; fullName?: string }) => void;
-  loading: boolean;
+  defaultEmail?: string;
+  defaultPassword?: string;
   googleLoading: boolean;
-  onSubmit: (e: React.FormEvent) => void;
+  /** Throws on failure; AuthForm surfaces the message inline. */
+  onSubmit: (values: FormValues, mode: AuthMode) => Promise<void>;
   onGoogle: () => void;
-  onForgot: () => void;
+  onForgot: (email: string) => void;
 }) {
+  const form = useForm<FormValues>({
+    defaultValues: { email: defaultEmail, password: defaultPassword, fullName: "" },
+    mode: "onSubmit",
+  });
+  const {
+    register,
+    handleSubmit,
+    setError,
+    clearErrors,
+    getValues,
+    setValue,
+    formState: { errors, isSubmitting },
+  } = form;
+
+  // Keep external default fills (e.g. demo seed) in sync.
+  useEffect(() => {
+    if (defaultEmail) setValue("email", defaultEmail);
+    if (defaultPassword) setValue("password", defaultPassword);
+  }, [defaultEmail, defaultPassword, setValue]);
+
+  const submit = handleSubmit(async (values) => {
+    clearErrors("root");
+    try {
+      await onSubmit(values, mode);
+    } catch (err: any) {
+      setError("root", { message: err?.message ?? "Authentication failed" });
+    }
+  });
+
   return (
-    <Tabs value={mode} onValueChange={(v) => onModeChange(v as AuthMode)}>
+    <Tabs
+      value={mode}
+      onValueChange={(v) => {
+        clearErrors("root");
+        onModeChange(v as AuthMode);
+      }}
+    >
       <TabsList className="grid w-full grid-cols-2">
         <TabsTrigger value="signin">Sign in</TabsTrigger>
         <TabsTrigger value="signup">Sign up</TabsTrigger>
@@ -41,7 +75,7 @@ export function AuthForm({
         variant="outline"
         className="mt-6 w-full gap-2"
         onClick={onGoogle}
-        disabled={googleLoading || loading}
+        disabled={googleLoading || isSubmitting}
       >
         <GoogleGlyph />
         {googleLoading ? "Connecting…" : "Continue with Google"}
@@ -53,16 +87,21 @@ export function AuthForm({
         <span className="h-px flex-1 bg-border" />
       </div>
 
-      <form onSubmit={onSubmit} className="space-y-4">
+      <form onSubmit={submit} className="space-y-4" noValidate>
         <TabsContent value="signup" className="space-y-4 mt-0">
           <div className="space-y-1.5">
             <Label htmlFor="fullName">Full name</Label>
             <Input
               id="fullName"
-              required={mode === "signup"}
-              value={fullName}
-              onChange={(e) => onChange({ fullName: e.target.value })}
+              autoComplete="name"
+              aria-invalid={!!errors.fullName}
+              {...register("fullName", {
+                validate: (v) => mode !== "signup" || v.trim().length > 0 || "Full name is required",
+              })}
             />
+            {errors.fullName && (
+              <p className="text-[11px] text-destructive">{errors.fullName.message}</p>
+            )}
           </div>
         </TabsContent>
 
@@ -71,19 +110,23 @@ export function AuthForm({
           <Input
             id="email"
             type="email"
-            required
-            value={email}
-            onChange={(e) => onChange({ email: e.target.value })}
             autoComplete="email"
+            aria-invalid={!!errors.email}
+            {...register("email", {
+              required: "Email is required",
+              pattern: { value: /[^@\s]+@[^@\s]+\.[^@\s]+/, message: "Enter a valid email" },
+            })}
           />
+          {errors.email && <p className="text-[11px] text-destructive">{errors.email.message}</p>}
         </div>
+
         <div className="space-y-1.5">
           <div className="flex items-center justify-between">
             <Label htmlFor="password">Password</Label>
             {mode === "signin" && (
               <button
                 type="button"
-                onClick={onForgot}
+                onClick={() => onForgot(getValues("email"))}
                 className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground hover:text-foreground"
               >
                 Forgot?
@@ -93,17 +136,30 @@ export function AuthForm({
           <Input
             id="password"
             type="password"
-            required
-            minLength={6}
-            value={password}
-            onChange={(e) => onChange({ password: e.target.value })}
             autoComplete={mode === "signin" ? "current-password" : "new-password"}
+            aria-invalid={!!errors.password}
+            {...register("password", {
+              required: "Password is required",
+              minLength: { value: 6, message: "At least 6 characters" },
+            })}
           />
+          {errors.password && (
+            <p className="text-[11px] text-destructive">{errors.password.message}</p>
+          )}
         </div>
 
-        <Button type="submit" className="w-full" disabled={loading || googleLoading}>
-          {loading ? "Please wait…" : mode === "signin" ? "Sign in" : "Create account"}
+        <Button type="submit" className="w-full" disabled={isSubmitting || googleLoading}>
+          {isSubmitting ? "Please wait…" : mode === "signin" ? "Sign in" : "Create account"}
         </Button>
+
+        {errors.root && (
+          <p
+            role="alert"
+            className="rounded-sm border border-destructive/40 bg-destructive/5 px-3 py-2 text-[11px] text-destructive"
+          >
+            {errors.root.message}
+          </p>
+        )}
       </form>
     </Tabs>
   );
