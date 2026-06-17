@@ -2,8 +2,9 @@
  * Auth — sign in / sign up / Google OAuth / forgot password.
  */
 import { useState, useEffect } from "react";
-import { useNavigate } from "@tanstack/react-router";
+import { useNavigate, getRouteApi } from "@tanstack/react-router";
 import { toast } from "sonner";
+import { AlertCircle } from "lucide-react";
 import { AuthForm } from "./AuthForm";
 import { DemoSetupCard } from "./DemoSetupCard";
 import {
@@ -30,13 +31,14 @@ import {
 
 const FLOOR_SEARCH = { range: "7d" as const, center: "all" as const, compare: true };
 
+const routeApi = getRouteApi("/auth");
+
 export function AuthPage() {
   const navigate = useNavigate();
+  const search = routeApi.useSearch();
   const [mode, setMode] = useState<AuthMode>("signin");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [fullName, setFullName] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [defaultEmail, setDefaultEmail] = useState("");
+  const [defaultPassword, setDefaultPassword] = useState("");
   const [googleLoading, setGoogleLoading] = useState(false);
   const [forgotOpen, setForgotOpen] = useState(false);
   const [forgotEmail, setForgotEmail] = useState("");
@@ -46,35 +48,28 @@ export function AuthPage() {
   const seedMut = useSeedDemoUsers();
 
   useEffect(() => {
+    if (search.reason === "expired") return; // don't bounce a just-expired user
     getActiveSession().then((session) => {
       if (session) navigate({ to: "/floor", search: FLOOR_SEARCH });
     });
-  }, [navigate]);
+  }, [navigate, search.reason]);
 
-  const onSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    try {
-      if (mode === "signin") {
-        await signIn(email, password);
-        toast.success("Welcome back");
-      } else {
-        await signUp(email, password, fullName);
-        toast.success("Account created");
-      }
-      navigate({ to: "/floor", search: FLOOR_SEARCH });
-    } catch (err: any) {
-      toast.error(err.message ?? "Authentication failed");
-    } finally {
-      setLoading(false);
+  const onSubmit = async (values: { email: string; password: string; fullName: string }, m: AuthMode) => {
+    if (m === "signin") {
+      await signIn(values.email, values.password);
+      toast.success("Welcome back");
+    } else {
+      await signUp(values.email, values.password, values.fullName);
+      toast.success("Account created");
     }
+    navigate({ to: "/floor", search: FLOOR_SEARCH });
   };
 
   const onGoogle = async () => {
     setGoogleLoading(true);
     try {
       const result = await signInWithGoogle();
-      if (result.redirected) return; // browser navigates to Google
+      if (result.redirected) return;
       navigate({ to: "/floor", search: FLOOR_SEARCH });
     } catch (err: any) {
       toast.error(err.message ?? "Google sign-in failed");
@@ -103,8 +98,8 @@ export function AuthPage() {
       const admin = result.accounts.find((a) => a.role === "admin");
       if (admin) {
         setMode("signin");
-        setEmail(admin.email);
-        setPassword(result.password);
+        setDefaultEmail(admin.email);
+        setDefaultPassword(result.password);
       }
       await demoStatus.refetch();
       toast.success("Demo admin and staff accounts are ready");
@@ -126,6 +121,18 @@ export function AuthPage() {
           <p className="mt-1 text-xs text-muted-foreground">Restaurant operations intelligence</p>
         </div>
 
+        {search.reason === "expired" && (
+          <div
+            role="alert"
+            className="mb-4 flex items-start gap-2 rounded-md border border-[var(--color-warning)]/40 bg-[var(--color-warning)]/10 px-3 py-2"
+          >
+            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-[var(--color-warning)]" />
+            <p className="text-xs text-foreground">
+              Your session expired — please sign in again.
+            </p>
+          </div>
+        )}
+
         {demoStatus.data?.canSetupDemo && (
           <DemoSetupCard status={demoStatus.data} loading={seedMut.isPending} onSetup={setupDemoAccounts} />
         )}
@@ -133,19 +140,12 @@ export function AuthPage() {
         <AuthForm
           mode={mode}
           onModeChange={setMode}
-          email={email}
-          password={password}
-          fullName={fullName}
-          onChange={(p) => {
-            if (p.email !== undefined) setEmail(p.email);
-            if (p.password !== undefined) setPassword(p.password);
-            if (p.fullName !== undefined) setFullName(p.fullName);
-          }}
-          loading={loading}
+          defaultEmail={defaultEmail}
+          defaultPassword={defaultPassword}
           googleLoading={googleLoading}
           onSubmit={onSubmit}
           onGoogle={onGoogle}
-          onForgot={() => {
+          onForgot={(email) => {
             setForgotEmail(email);
             setForgotOpen(true);
           }}

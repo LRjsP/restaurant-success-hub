@@ -8,12 +8,32 @@ import { fmtCurrency } from "@/lib/format";
 import { useOfficeData } from "./data";
 import { RevenueVsCostChart } from "./RevenueVsCostChart";
 import { PnlSummaryPanel } from "./PnlSummaryPanel";
+import { KpiRowSkeleton, ChartSkeleton, HeatmapSkeleton } from "@/components/dashboard/Skeletons";
 
 const layoutApi = getRouteApi("/_authenticated");
 
 export function OfficePage() {
   const search = layoutApi.useSearch();
   const pnl = useOfficeData(search);
+
+  if (pnl.isLoading) {
+    return (
+      <div className="space-y-6">
+        <KpiRowSkeleton count={4} />
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
+          <Panel title="Revenue vs Cost" subtitle="Daily breakdown" className="lg:col-span-3">
+            <ChartSkeleton height="h-72" />
+          </Panel>
+          <Panel title="P&L Summary" subtitle="Period to date" className="lg:col-span-2">
+            <ChartSkeleton height="h-72" />
+          </Panel>
+        </div>
+        <Panel title="Day × Time Heatmap" subtitle="Demand">
+          <HeatmapSkeleton />
+        </Panel>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

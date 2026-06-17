@@ -7,13 +7,30 @@ import { fmtCurrency, fmtNumber } from "@/lib/format";
 import { usePipelineData } from "./data";
 import { FunnelPanel } from "./FunnelPanel";
 import { UpcomingEventsTable } from "./UpcomingEventsTable";
+import { KpiRowSkeleton, ChartSkeleton, TableRowsSkeleton } from "@/components/dashboard/Skeletons";
 
 const layoutApi = getRouteApi("/_authenticated");
 
 export function PipelinePage() {
   const search = layoutApi.useSearch();
-  const { totalPipeline, confirmedValue, winRate, upcomingGuests, byStage, maxStageValue, upcoming, span, activeCount } =
+  const { totalPipeline, confirmedValue, winRate, upcomingGuests, byStage, maxStageValue, upcoming, span, activeCount, isLoading } =
     usePipelineData(search);
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <KpiRowSkeleton count={4} />
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
+          <Panel title="Funnel" subtitle="Pipeline by stage" className="lg:col-span-2">
+            <ChartSkeleton height="h-64" />
+          </Panel>
+          <Panel title="Upcoming Events" subtitle="Sorted by date" className="lg:col-span-3">
+            <TableRowsSkeleton rows={6} cols={6} />
+          </Panel>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

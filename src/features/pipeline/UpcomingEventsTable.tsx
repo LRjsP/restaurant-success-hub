@@ -1,9 +1,30 @@
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
+import { CalendarPlus } from "lucide-react";
 import { fmtCurrency } from "@/lib/format";
 import type { PipelineEvent } from "@/lib/dashboard-types";
 import { STAGE_COLOR } from "./data";
+import { EmptyState } from "@/components/dashboard/EmptyState";
+import { TableRowsSkeleton } from "@/components/dashboard/Skeletons";
 
-export function UpcomingEventsTable({ events }: { events: PipelineEvent[] }) {
+export function UpcomingEventsTable({
+  events,
+  isLoading,
+}: {
+  events: PipelineEvent[];
+  isLoading?: boolean;
+}) {
+  if (isLoading) return <TableRowsSkeleton rows={5} cols={6} />;
+  if (!events.length) {
+    return (
+      <EmptyState
+        icon={CalendarPlus}
+        message="No upcoming events in this range."
+        ctaLabel="Add event"
+        onCta={() => toast.info("Event creation is coming soon.")}
+      />
+    );
+  }
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-left text-sm">

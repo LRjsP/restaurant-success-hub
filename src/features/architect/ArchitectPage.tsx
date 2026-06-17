@@ -9,13 +9,31 @@ import { MenuMatrixChart } from "./MenuMatrixChart";
 import { MenuItemsTable } from "./MenuItemsTable";
 import { TopPerformersPanel } from "./TopPerformersPanel";
 import { CLASS_COLOR } from "./utils";
+import { KpiRowSkeleton, ChartSkeleton, TableRowsSkeleton } from "@/components/dashboard/Skeletons";
 
 const layoutApi = getRouteApi("/_authenticated");
 
 export function ArchitectPage() {
   const search = layoutApi.useSearch();
-  const { items, totalRevenue, totalMargin, blendedPct, stars, dogs, medianSold, medianMargin } =
+  const { items, totalRevenue, totalMargin, blendedPct, stars, dogs, medianSold, medianMargin, isLoading } =
     useArchitectData(search);
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <KpiRowSkeleton count={4} />
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
+          <Panel title="Menu Engineering Matrix" subtitle="Volume Sold vs Margin ($)" className="lg:col-span-3">
+            <ChartSkeleton height="h-80" />
+            <div className="mt-4"><TableRowsSkeleton rows={5} cols={6} /></div>
+          </Panel>
+          <Panel title="Top Performers" subtitle="By contribution margin" className="lg:col-span-2">
+            <TableRowsSkeleton rows={6} cols={2} />
+          </Panel>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

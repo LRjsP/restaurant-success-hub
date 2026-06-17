@@ -1,10 +1,13 @@
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
-import { Search, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { Search, ArrowUpDown, ArrowUp, ArrowDown, ChefHat } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 import { fmtCurrency, fmtNumber } from "@/lib/format";
 import type { MenuItem } from "@/lib/dashboard-types";
 import { CLASS_COLOR, type SortKey } from "./utils";
+import { EmptyState } from "@/components/dashboard/EmptyState";
+import { TableRowsSkeleton } from "@/components/dashboard/Skeletons";
 
 const SORT_FIELDS: { key: SortKey; label: string }[] = [
   { key: "name", label: "Name" },
@@ -14,7 +17,22 @@ const SORT_FIELDS: { key: SortKey; label: string }[] = [
   { key: "revenue", label: "Revenue" },
 ];
 
-export function MenuItemsTable({ items }: { items: MenuItem[] }) {
+export function MenuItemsTable({ items, isLoading }: { items: MenuItem[]; isLoading?: boolean }) {
+  if (isLoading) return <div className="mt-6"><TableRowsSkeleton rows={6} cols={6} /></div>;
+  if (!items.length) {
+    return (
+      <div className="mt-6">
+        <EmptyState
+          icon={ChefHat}
+          message="No menu items yet."
+          ctaLabel="Seed demo data"
+          onCta={() =>
+            toast.info("Demo seeding runs from the admin migration. Ask an admin to populate sample data.")
+          }
+        />
+      </div>
+    );
+  }
   const [query, setQuery] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("margin");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");

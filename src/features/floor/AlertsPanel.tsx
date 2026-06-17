@@ -1,9 +1,31 @@
-import { AlertTriangle, AlertCircle, Info } from "lucide-react";
+import { AlertTriangle, AlertCircle, Info, ShieldCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
+import { EmptyState } from "@/components/dashboard/EmptyState";
+import { TableRowsSkeleton } from "@/components/dashboard/Skeletons";
 
 type Alert = { severity: "danger" | "warning" | "info"; message: string; time: string };
 
-export function AlertsList({ alerts }: { alerts: readonly Alert[] }) {
+export function AlertsList({
+  alerts,
+  isLoading,
+}: {
+  alerts: readonly Alert[];
+  isLoading?: boolean;
+}) {
+  if (isLoading) return <TableRowsSkeleton rows={4} cols={1} />;
+  if (!alerts.length) {
+    return (
+      <EmptyState
+        icon={ShieldCheck}
+        message="All clear — no active alerts."
+        ctaLabel="Seed demo data"
+        onCta={() =>
+          toast.info("Demo seeding runs from the admin migration. Ask an admin to populate sample data.")
+        }
+      />
+    );
+  }
   return (
     <div className="space-y-3">
       {alerts.map((a, i) => (
