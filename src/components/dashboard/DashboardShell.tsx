@@ -172,6 +172,22 @@ export function DashboardShell({
                 <TooltipContent side="bottom">User Config</TooltipContent>
               </Tooltip>
             )}
+            {me && (
+              <div className="flex items-center gap-2 rounded-sm border border-border bg-card px-2 py-1">
+                <Avatar className="h-6 w-6">
+                  {me.avatarUrl && <AvatarImage src={me.avatarUrl} alt={displayName} />}
+                  <AvatarFallback className="bg-accent/15 text-[10px] font-mono font-semibold text-accent">
+                    {initials}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="hidden flex-col leading-tight sm:flex">
+                  <span className="text-[11px] font-medium text-foreground">{displayName}</span>
+                  <span className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">
+                    {roleLabel}
+                  </span>
+                </div>
+              </div>
+            )}
             <Button variant="ghost" size="sm" onClick={handleSignOut} className="text-muted-foreground hover:text-foreground">
               <LogOut className="h-3.5 w-3.5" />
             </Button>
